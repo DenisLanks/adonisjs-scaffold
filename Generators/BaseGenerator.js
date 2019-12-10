@@ -4,9 +4,9 @@ const path = require('path')
 const nunjucks = require('nunjucks')
 const ejs = require('ejs')
 const i = require('inflect')
-const Ioc = require('adonis-fold').Ioc
-const Command = Ioc.use('Adonis/Src/Command')
-const Config = Ioc.use('Adonis/Src/Command')
+const Ioc = require('@adonisjs/fold').ioc
+const Command = Ioc.use('Command')
+const Config = Ioc.use('Config')
 const fs = require('co-fs-extra')
 const env = new nunjucks.Environment()
 env.addFilter('split', function (str, seperator) {

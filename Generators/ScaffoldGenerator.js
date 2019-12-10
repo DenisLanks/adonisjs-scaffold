@@ -2,8 +2,8 @@
 
 const BaseGenerator = require('./BaseGenerator')
 const path = require('path')
-const Ioc = require('adonis-fold').Ioc
-const Helpers = Ioc.use('Adonis/Src/Helpers')
+const Ioc = require('@adonisjs/fold').ioc
+const Helpers = Ioc.use('Helpers')
 const inflect = require('inflect')
 const yaml = require('yamljs')
 
@@ -267,11 +267,11 @@ class ScaffoldGenerator extends BaseGenerator {
     
     const name = object.name
     const fields = object.fields
-    yield this.makeModel(name, fields, object)
-    yield this.makeController(name, fields)
-    yield this.makeRepository(name)
-    yield this.makeView(name, fields)
-    yield this.makeTest(name, fields)
+    this.makeModel(name, fields, object)
+    this.makeController(name, fields)
+    this.makeRepository(name)
+    this.makeView(name, fields)
+    this.makeTest(name, fields)
     this.success("Ayee finished build , let's code")
   }
 }
