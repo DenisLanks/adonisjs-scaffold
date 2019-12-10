@@ -4,6 +4,7 @@ const BaseGenerator = require('./BaseGenerator')
 const path = require('path')
 const Ioc = require('@adonisjs/fold').ioc
 const Helpers = Ioc.use('Helpers')
+const Config = Ioc.use('Config')
 const inflect = require('inflect')
 const yaml = require('yamljs')
 
@@ -182,11 +183,11 @@ class ScaffoldGenerator extends BaseGenerator {
     yield this._wrapWrite(template, toPath, templateOptions, '.njk')
   }
 
-  get signature () {
+  static get signature () {
     return 'scaffold'
   }
 
-  get description () {
+  static get description () {
     return 'Scaffold make easier generate with template'
   }
 
@@ -218,9 +219,9 @@ class ScaffoldGenerator extends BaseGenerator {
             databaseService = new PostgresService()
             databaseService.connect(name)
           } break;
-        
-          default:{ 
-            console.log('unsupported database client');   
+
+          default:{
+            console.log('unsupported database client');
             return;
           }
         }
@@ -230,41 +231,41 @@ class ScaffoldGenerator extends BaseGenerator {
         console.debug('schemas founded')
         console.debug(schemas)
         //transform result to plain array of strings
-          
+
         //let user choice which schema we will scaffold
         let schema = await this.choice('schema to scaffold',schemas);
         console.debug(`the selected schema was ${schema}`);
-        //query tables 
+        //query tables
         let tables = await databaseService.getTables(schema);
-        
+
         //for each table query columns
         for (const table of tables) {
           table.columns = await databaseService.getColumns(table.name);
-          
+
           if (table.hasindexes) {
             //query all index belongs to table
             table.constraints = await databaseService.getConstraints(table.name);
-          }                               
+          }
           console.log(table)
         }
 
         object = databaseService.toYmlSchema();console.log(object);
         databaseService.disconnect()
-        
+
       } break;
-    
+
       case 'Yml':{
         try {
           const name = await this
           .ask('Enter yml name');
           object = yaml.load(path.join(this.helpers.basePath(), name + '.yml'))
-         
+
         } catch (e) {
           this._error(e.message)
         }
       } break;
     }
-    
+
     const name = object.name
     const fields = object.fields
     this.makeModel(name, fields, object)
@@ -276,4 +277,4 @@ class ScaffoldGenerator extends BaseGenerator {
   }
 }
 
-module.exports = Scaffold
+module.exports = ScaffoldGenerator
