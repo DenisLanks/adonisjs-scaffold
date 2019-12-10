@@ -190,7 +190,7 @@ class ScaffoldGenerator extends BaseGenerator {
     return 'Scaffold make easier generate with template'
   }
 
-  * handle (args, options) {
+  async handle (args, options) {
     // Chose the source of scaffold
     let source = await this.choice('Source of scaffold',['Database','Yml']);
     let object = {};
