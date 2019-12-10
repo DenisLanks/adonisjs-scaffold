@@ -1,0 +1,37 @@
+{
+  "name": "adonis-scaffold",
+  "version": "0.0.0",
+  "description": "Adonis package to scaffold database and generate migrations, cruds , validators etc.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DenisLanks/adonisjs-scaffold.git"
+  },
+  "keywords": [
+    "adonis",
+    "scaffold"
+  ],
+  "author": "Denis Lanks",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DenisLanks/adonisjs-scaffold/issues"
+  },
+  "homepage": "https://github.com/DenisLanks/adonisjs-scaffold#readme",
+  "devDependencies": {
+    "@adonisjs/ace": "^5.0.8",
+    "@adonisjs/fold": "^4.0.9"
+  },
+  "dependencies": {
+    "co": "^4.6.0",
+    "co-fs-extra": "^1.2.1",
+    "dotenv": "^8.2.0",
+    "ejs": "^3.0.1",
+    "hogan.js": "^3.0.2",
+    "inflect": "^0.4.0",
+    "nunjucks": "^3.2.0",
+    "randomstring": "^1.1.5"
+  }
+}
