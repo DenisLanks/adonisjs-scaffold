@@ -220,6 +220,14 @@ class ScaffoldGenerator extends BaseGenerator {
             databaseService.connect(name)
           } break;
 
+          case 'oracledb':{
+            //generate scaffold from postgres database
+            console.log('Database config founded! Client oracledb')
+            const OracleService = require('../Services/OracleService');
+            databaseService = new OracleService()
+            databaseService.connect(name)
+          } break;
+
           default:{
             console.log('unsupported database client');
             return;

@@ -32,6 +32,7 @@
     "hogan.js": "^3.0.2",
     "inflect": "^0.4.0",
     "nunjucks": "^3.2.0",
+    "oracledb": "^4.1.0",
     "randomstring": "^1.1.5",
     "yamljs": "^0.3.0"
   }
