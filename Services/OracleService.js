@@ -1,67 +1,127 @@
 'use strict'
-import DatabaseService from './DatabaseService';
+const DatabaseService = require('./DatabaseService');
 const Database = use('Database')
 class OracleService extends DatabaseService
 {
-    connect(name){
-        this.connection = Database.connection(name)
-    }
-
-    disconnect(){
-        this.connection.close()
-    }
 
     async getSchemas(){
-        return await Database.from('all_users')
-        .orderBy('username', 'asc')
-        .select('username as name');
+        return await this.connection.from('ALL_USERS')
+        .orderBy('USERNAME', 'asc')
+        .select('USERNAME as name');
     }
 
     async getTables(schema){
         //save to use another time
         this.schema = schema;
-        return await Database.from('all_tables')
-        .where('owner', '=',schema)
-        .orderBy('table_name', 'asc')
-        .select('table_name as name');
+        return await this.connection.from('ALL_TABLES')
+        .where('OWNER', '=',schema)
+        .orderBy('TABLE_NAME', 'asc')
+        .select('TABLE_NAME as name');
     }
 
     async getColumns(table){
-        return await Database.from('all_tab_cols')
-        .where('owner', '=',this.schema)
-        .where('table_name',table)
-        .orderBy('column_id', 'asc')
-        .select('column_name as name', 'data_type as type',
-         'data_length as length', 'pg_attribute.attnotnull as notnull', 'pg_attribute.atthasdef as hasdefault','data_precision as precision','data_scale as scale')
+        return await this.connection.from('ALL_TAB_COLS')
+        .where('OWNER', '=',this.schema)
+        .where('TABLE_NAME',table)
+        .orderBy('COLUMN_ID', 'asc')
+        .select('COLUMN_NAME as name', 'DATA_TYPE as type',
+         'DATA_LENGTH as length', 'NULLABLE as nullable', 'DATA_PRECISION as precision','DATA_SCALE as scale')
     }
 
     async getConstraints(table){
-        return Promise.reject('Not implemented.');
+      return await this.connection.from('ALL_CONSTRAINTS as ac')
+      .innerJoin('ALL_CONS_COLUMNS as acc','ac.CONSTRAINT_NAME','acc.CONSTRAINT_NAME')
+      .innerJoin('ALL_CONSTRAINTS as rc',' ac.R_CONSTRAINT_NAME','rc.CONSTRAINT_NAME')
+      .innerJoin('ALL_CONS_COLUMNS as rcc', function () {
+        this.on('rc.CONSTRAINT_NAME','rcc.CONSTRAINT_NAME')
+        .andOn('rcc.POSITION','acc.POSITION');
+      })
+      .where("ac.CONSTRAINT_TYPE","R")
+      .where("ac.TABLE_NAME", table)
+      //.orderBy([{ column: 'ac.CONSTRAINT_NAME' }, { column: 'rcc.COLUMN_NAME'},
+      //          { column:'acc.POSITION'},{ column: 'rcc.POSITION' }])
+      .select('ac.CONSTRAINT_NAME', 'acc.COLUMN_NAME','rc.TABLE_NAME AS R_TABLE_NAME' ,'rcc.COLUMN_NAME AS R_COLUMN_NAME');
     }
 
-    async toYmlSchema(){
+    getType(dbtype){
+      switch (dbtype) {
+        case 'VARCHAR2': return 'string';
+        case 'CHAR': return 'string';
+        case 'NCHAR': return 'string';
+        case 'NVARCHAR2 ': return 'string';
+        case 'CLOB ': return 'text';
+        case 'NLOB ': return 'text';
+        case 'LONG ': return 'text';
+        case 'NUMBER ': return 'decimal';
+        case 'BINARY_FLOAT': return 'float';
+        case 'BINARY_DOUBLE': return 'decimal';
+        case 'DATE': return 'date';
+        case 'DATETIME': return 'datetime';
+        case 'TIMESTAMP': return 'timestamp';
+        case 'BLOB': return 'binary';
+        case 'BFILE': return 'binary';
+        default:  return 'string';
+      }
+    }
+
+    getTypeValidation(type, nullable, length, precision, scale){
+        let validation = [];
+        if(nullable==='N') validation.push("required");
+        switch (type) {
+          case "string":{
+            validation.push(type);
+            validation.push(''+length);
+          }break;
+          case "float": {
+            validation.push(type);
+            validation.push(''+precision);
+            validation.push(''+scale);
+          }break;
+          case "decimal":{
+            validation.push(type);
+            validation.push(''+precision);
+            validation.push(''+scale);
+          }break;
+          case "timestamp":break;
+
+          default:{
+            validation.push(type);
+          }break;
+        }
+        return validation.join("|");
+    }
+    async toYmlSchema(schema){
         let schemas = [];
+        let tables = await this.getTables(schema)
         //for each table query columns
         for (const table of tables) {
-            let schema = {};
-            schema.name = table.name;
-            schema.fields = {};    
-            schema.rules = {};
-            schema.relation = {};
-                
-            table.columns = await databaseService.getColumns(table.name);
-            for (const column in table.columns) {
-                let field = {};
-                
-                schema.fields[column.name] = field;
+            let entity = {};
+            entity.name = table.name;
+            entity.fields = {};
+            entity.relation = {};
+            try {
+
+              table.columns = await this.getColumns(table.name);
+              //console.log(table.columns)
+              for (const index in table.columns) {
+                  let column = table.columns[index];
+                  let field = {};
+                  let type = this.getType(column.type);
+                  field.type = type;
+                  field.rules = this.getTypeValidation(type, column.nullable, column.length,column.precision, column.scale);
+                  entity.fields[column.name] = field;
+              }
+
+              table.constraints = await this.getConstraints(table.name);
+              console.log(table.constraints);
+              schemas.push(entity);
+            } catch (error) {
+              //this.error(error)
+              console.log(error);
             }
-            if (table.hasindexes) {
-              //query all index belongs to table
-              table.constraints = await databaseService.getConstraints(table.name);
-            }                               
-            schemas.push(schema);
+
           }
-        return Promise.reject('Not implemented.');
+        return Promise.resolve(schemas);
     }
 }
 

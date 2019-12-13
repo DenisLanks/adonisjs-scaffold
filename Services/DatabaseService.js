@@ -29,7 +29,7 @@ class DatabaseService{
         return Promise.reject('Not implemented.');
     }
 
-    async toYmlSchema(){
+    async toYmlSchema(schema){
         return Promise.reject('Not implemented.');
     }
 }

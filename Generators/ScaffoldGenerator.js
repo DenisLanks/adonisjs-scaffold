@@ -191,6 +191,16 @@ class ScaffoldGenerator extends BaseGenerator {
     return 'Scaffold make easier generate with template'
   }
 
+  async generate(schema){
+    const name = schema.name
+    const fields = schema.fields
+    this.makeModel(name, fields, schema)
+    this.makeController(name, fields)
+    this.makeRepository(name)
+    this.makeView(name, fields)
+    this.makeTest(name, fields)
+  }
+
   async handle (args, options) {
     // Chose the source of scaffold
     let source = await this.choice('Source of scaffold',['Database','Yml']);
@@ -204,7 +214,6 @@ class ScaffoldGenerator extends BaseGenerator {
 
         let path = `database.${name}`;
         let configs = Config.get(path,false);
-
         if (configs == false) {
           console.log('Database config not found!');
           return
@@ -236,29 +245,22 @@ class ScaffoldGenerator extends BaseGenerator {
 
         let schemas = await databaseService.getSchemas();
 
-        console.debug('schemas founded')
-        console.debug(schemas)
-        //transform result to plain array of strings
-
         //let user choice which schema we will scaffold
         let schema = await this.choice('schema to scaffold',schemas);
         console.debug(`the selected schema was ${schema}`);
-        //query tables
-        let tables = await databaseService.getTables(schema);
 
-        //for each table query columns
-        for (const table of tables) {
-          table.columns = await databaseService.getColumns(table.name);
+        //Convert to Yml object
+        object = await databaseService.toYmlSchema(schema);
 
-          if (table.hasindexes) {
-            //query all index belongs to table
-            table.constraints = await databaseService.getConstraints(table.name);
-          }
-          console.log(table)
-        }
+        //console.log(JSON.stringify(object));
 
-        object = databaseService.toYmlSchema();console.log(object);
         databaseService.disconnect()
+
+        //for each table founded generate the
+        for (let i = 0; i < object.length; i++) {
+          const schema = object[i];
+          await this.generate(schema);
+        }
 
       } break;
 
@@ -266,21 +268,16 @@ class ScaffoldGenerator extends BaseGenerator {
         try {
           const name = await this
           .ask('Enter yml name');
-          object = yaml.load(path.join(this.helpers.basePath(), name + '.yml'))
-
+          object = yaml.load(path.join(this.helpers.appRoot(), name + '.yml'))
+          console.log(JSON.stringify(object));
+          //this.generate(object);
         } catch (e) {
           this._error(e.message)
         }
       } break;
     }
 
-    const name = object.name
-    const fields = object.fields
-    this.makeModel(name, fields, object)
-    this.makeController(name, fields)
-    this.makeRepository(name)
-    this.makeView(name, fields)
-    this.makeTest(name, fields)
+
     this.success("Ayee finished build , let's code")
   }
 }

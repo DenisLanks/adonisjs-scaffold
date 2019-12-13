@@ -4,7 +4,7 @@ const Database = use('Database')
 
 class PostgresService extends DatabaseService{
 
-   
+
     async getSchemas(){
         console.info('loading schemas from database...');
 
@@ -13,15 +13,15 @@ class PostgresService extends DatabaseService{
             return value.schemaname
             });
     }
- 
+
     async getTables(schema){
         return await this.connection.select('tablename as name','hasindexes','hastriggers')
         .from('pg_catalog.pg_tables')
         .where('schemaname',schema );
     }
- 
+
     async getColumns(table){
-        return await Database.from('pg_attribute')
+        return await this.connection.from('pg_attribute')
         .innerJoin('pg_type', 'pg_attribute.atttypid', 'pg_type.oid')
         .innerJoin('pg_class', 'pg_attribute.attrelid', 'pg_class.oid')
         .where('attnum', '>=',0)
@@ -30,9 +30,9 @@ class PostgresService extends DatabaseService{
         .select('pg_attribute.attname as name', 'pg_type.typname as type',
          'pg_attribute.attlen as length', 'pg_attribute.attnotnull as notnull', 'pg_attribute.atthasdef as hasdefault')
     }
- 
+
     async getConstraints(table){
-        return await Database.from('pg_constraint')
+        return await this.connection.from('pg_constraint')
         .innerJoin('pg_class as pc','pg_constraint.conrelid', 'pc.oid')
         .leftJoin('pg_class as foreign','pg_constraint.confrelid', 'foreign.oid')
         .where('pc.relname',table)
@@ -48,10 +48,10 @@ class PostgresService extends DatabaseService{
         for (const table of tables) {
             let schema = {};
             schema.name = table.name;
-            schema.fields = {};    
+            schema.fields = {};
             schema.rules = {};
             schema.relation = {};
-                
+
             table.columns = await databaseService.getColumns(table.name);
             for (const column in table.columns) {
                 let field = {};
@@ -61,7 +61,7 @@ class PostgresService extends DatabaseService{
             if (table.hasindexes) {
               //query all index belongs to table
               table.constraints = await databaseService.getConstraints(table.name);
-            }                               
+            }
             schemas.push(schema);
           }
         return Promise.reject('Not implemented.');
