@@ -18,7 +18,7 @@ class Base extends Command {
     super();
     this.helpers = Helpers;
     this.config = Config.get('scaffold',{
-      templates:'./../../templates',
+      templates:'./../../../templates',
       services: true,
       repositories:true,
       migrations:true,
@@ -67,8 +67,8 @@ class Base extends Command {
    *
    * @private
    */
-  * _getContents (template) {
-    return yield fs.readFile(template, 'utf-8')
+  async _getContents (template, callback) {
+    await fs.readFile(template, 'utf-8',callback);
   }
 
   /**
@@ -78,8 +78,8 @@ class Base extends Command {
    *
    * @private
    */
-  * _hasFile (dest) {
-    return yield fs.exists(dest)
+  async _hasFile (dest) {
+    return Promise.resolve(fs.exists(dest));
   }
 
   /**
@@ -90,8 +90,13 @@ class Base extends Command {
    *
    * @private
    */
-  * _writeContents (dest, contents) {
-    return yield fs.outputFile(dest, contents)
+  async _writeContents (dest, contents) {
+    return new Promise(()=>{
+      fs.outputFile(dest, contents,(error)=>{});
+      console.log(`create: ${dest}`);
+    },(error)=>{
+      
+    });
   }
 
   /**
@@ -105,22 +110,25 @@ class Base extends Command {
    * @public
    */
 
-  * write (template, dest, options, renderingTemplate) {
-    template = template.endsWith(renderingTemplate) ? template : this._makeTemplatePath(template, renderingTemplate)
-    const contents = yield this._getContents(template)
+  async write (template, dest, options, renderingTemplate) {
+    template = template.endsWith(renderingTemplate) ? template : this._makeTemplatePath(template, renderingTemplate);
+    await this._getContents(template,async (err,contents)=>{
+          // const hasFile = await this._hasFile(dest)
+          // if (hasFile) {
+          //   throw new Error(`I am afraid ${this._incrementalPath(dest)} already exists`)
+          // }
+      
+          if (renderingTemplate === '.njk') {
+            const temp = nunjucks.compile(contents, env)
+            //console.log(temp.render(options));
+           return await this._writeContents(dest, temp.render(options))
+          } else {
+            const temp = ejs.compile(contents)
+            //console.log(temp(options));
+            return await this._writeContents(dest, temp(options))
+          }
 
-    const hasFile = yield this._hasFile(dest)
-    if (hasFile) {
-      throw new Error(`I am afraid ${this._incrementalPath(dest)} already exists`)
-    }
-
-    if (renderingTemplate === '.njk') {
-      const temp = nunjucks.compile(contents, env)
-      return yield this._writeContents(dest, temp.render(options))
-    } else {
-      const temp = ejs.compile(contents)
-      return yield this._writeContents(dest, temp(options))
-    }
+    });
   }
 
   /**
@@ -132,7 +140,7 @@ class Base extends Command {
    * @private
    */
   _incrementalPath (toPath) {
-    const regeExp = new RegExp(`${this.helpers.basePath()}${path.sep}?`)
+    const regeExp = new RegExp(`${this.helpers.appRoot()}${path.sep}?`)
     return toPath.replace(regeExp, '')
   }
 

@@ -17,7 +17,7 @@ class ScaffoldGenerator extends BaseGenerator {
     const entity = this._makeEntityName(name, 'controller', true)
     const shortName = entity.entityName.split('Controller')[0]
     const table = this._makeEntityName(name, '', false, 'plural')
-    const toPath = path.join(this.helpers.appPath(), 'Http/Controllers', `${entity.entityPath}.js`)
+    const toPath = path.join(this.helpers.appRoot(), 'Http/Controllers', `${entity.entityPath}.js`)
 
     const arrayStringField = []
 
@@ -37,24 +37,24 @@ class ScaffoldGenerator extends BaseGenerator {
     yield this._wrapWrite('controller', toPath, templateOptions, '.njk')
   }
 
-  * makeModel (name, fields, object) {
-    const entity = this._makeEntityName(name, 'model', false, 'singular')
-    const table = this._makeEntityName(name, '', false, 'plural')
-    const toPath = path.join(this.helpers.appPath(), 'Model', `${entity.entityPath}.js`)
-    const template = 'model'
-    const templateOptions = {
-      name: entity.entityName,
-      table: table.entityName.toLowerCase(),
-      fields,
-      relations: this.parseRelation(object.relation)
-    }
-    try {
-      yield this.write(template, toPath, templateOptions, '.njk')
-      this._success(toPath)
-      yield this.makeMigration(name, table.entityName.toLowerCase(), fields)
-    } catch (e) {
-      this._error(e.message)
-    }
+   async makeModel (name, fields, object) {
+      const entity = this._makeEntityName(name, 'model', false, 'singular');
+      const table = this._makeEntityName(name, '', false, 'plural');
+      const toPath = path.join(this.helpers.appRoot(), 'Model', `${entity.entityPath}.js`);
+      const template = 'model'
+      const templateOptions = {
+        name: entity.entityName,
+        table: table.entityName.toLowerCase(),
+        fields,
+        relations: this.parseRelation(object.relation)
+      }
+      try {
+        await this.write(template, toPath, templateOptions, '.njk')
+        //this._success(toPath)
+        //yield this.makeMigration(name, table.entityName.toLowerCase(), fields)
+      } catch (e) {
+        this._error(e.message)
+      }
   }
 
   parseRelation (relations) {
@@ -72,8 +72,8 @@ class ScaffoldGenerator extends BaseGenerator {
           relations[i].relatedmodel = inflect.camelize(relatedModel)
         }
 
-        if (relations[i].usenamespace === '') {
-          relations[i].usenamespace = 'App/Model'
+        if (relations[i].usenamespace === '' || relations[i].usenamespace ===undefined) {
+          relations[i].usenamespace = 'App/Models'
         }
       }
     } else {
@@ -86,7 +86,7 @@ class ScaffoldGenerator extends BaseGenerator {
   * makeRepository (name) {
     const entity = this._makeEntityName(name, 'model', false, 'singular')
     const table = this._makeEntityName(name, '', false, 'plural')
-    const toPath = path.join(this.helpers.appPath(), 'Repositories', `${entity.entityPath}.js`)
+    const toPath = path.join(this.helpers.appRoot(), 'Repositories', `${entity.entityPath}.js`)
     const template = 'repository'
     const templateOptions = {
       name: entity.entityName,
@@ -104,7 +104,7 @@ class ScaffoldGenerator extends BaseGenerator {
   * makeService (name) {
     const entity = this._makeEntityName(name, 'model', false, 'singular')
     const table = this._makeEntityName(name, '', false, 'plural')
-    const toPath = path.join(this.helpers.appPath(), 'Services', `${entity.entityPath}.js`)
+    const toPath = path.join(this.helpers.appRoot(), 'Services', `${entity.entityPath}.js`)
     const template = 'service'
     const templateOptions = {
       name: entity.entityName,
@@ -123,7 +123,7 @@ class ScaffoldGenerator extends BaseGenerator {
   * makeTest (name, fields) {
     const entity = this._makeEntityName(name, 'model', false, 'singular')
     const table = this._makeEntityName(name, '', false, 'plural')
-    const toPath = path.join(this.helpers.basePath(), 'tests', 'unit', `${entity.entityPath}.spec.js`)
+    const toPath = path.join(this.helpers.appRoot(), 'tests', 'unit', `${entity.entityPath}.spec.js`)
     const template = 'test_spec'
     const arrayStringField = []
 
@@ -195,10 +195,11 @@ class ScaffoldGenerator extends BaseGenerator {
     const name = schema.name
     const fields = schema.fields
     this.makeModel(name, fields, schema)
-    this.makeController(name, fields)
-    this.makeRepository(name)
-    this.makeView(name, fields)
-    this.makeTest(name, fields)
+    // this.makeController(name, fields)
+    // this.makeRepository(name)
+    // this.makeMigration(name,name,fields)
+    // this.makeView(name, fields)
+    // this.makeTest(name, fields)
   }
 
   async handle (args, options) {
@@ -247,19 +248,18 @@ class ScaffoldGenerator extends BaseGenerator {
 
         //let user choice which schema we will scaffold
         let schema = await this.choice('schema to scaffold',schemas);
-        console.debug(`the selected schema was ${schema}`);
-
+        await databaseService.buildSchema(schema);
+        object = await databaseService.buildModels();
         //Convert to Yml object
-        object = await databaseService.toYmlSchema(schema);
+        //object = await databaseService.toYmlSchema(schema);
 
         //console.log(JSON.stringify(object));
 
-        databaseService.disconnect()
+        //databaseService.disconnect()
 
         //for each table founded generate the
-        for (let i = 0; i < object.length; i++) {
-          const schema = object[i];
-          await this.generate(schema);
+        for (const id in object) {
+          await this.generate(object[id]);
         }
 
       } break;
@@ -278,7 +278,7 @@ class ScaffoldGenerator extends BaseGenerator {
     }
 
 
-    this.success("Ayee finished build , let's code")
+    //this.success("Ayee finished build , let's code")
   }
 }
 

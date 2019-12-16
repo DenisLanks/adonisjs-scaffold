@@ -64,32 +64,7 @@ class OracleService extends DatabaseService
       }
     }
 
-    getTypeValidation(type, nullable, length, precision, scale){
-        let validation = [];
-        if(nullable==='N') validation.push("required");
-        switch (type) {
-          case "string":{
-            validation.push(type);
-            validation.push(''+length);
-          }break;
-          case "float": {
-            validation.push(type);
-            validation.push(''+precision);
-            validation.push(''+scale);
-          }break;
-          case "decimal":{
-            validation.push(type);
-            validation.push(''+precision);
-            validation.push(''+scale);
-          }break;
-          case "timestamp":break;
-
-          default:{
-            validation.push(type);
-          }break;
-        }
-        return validation.join("|");
-    }
+    
     async toYmlSchema(schema){
         let schemas = [];
         let tables = await this.getTables(schema)
@@ -106,9 +81,11 @@ class OracleService extends DatabaseService
               for (const index in table.columns) {
                   let column = table.columns[index];
                   let field = {};
+                  let nullable = column.nullable ==='N'? false: true;
+
                   let type = this.getType(column.type);
                   field.type = type;
-                  field.rules = this.getTypeValidation(type, column.nullable, column.length,column.precision, column.scale);
+                  field.rules = this.getTypeValidation(type, nullable, column.length,column.precision, column.scale);
                   entity.fields[column.name] = field;
               }
 
