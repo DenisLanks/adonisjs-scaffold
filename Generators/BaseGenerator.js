@@ -176,13 +176,8 @@ class Base extends Command {
    *
    * @private
    */
-  * _wrapWrite (entity, dest, options, renderingTemplate) {
-    try {
-      yield this.write(entity, dest, options, renderingTemplate)
-      this._success(dest)
-    } catch (e) {
-      this._error(e.message)
-    }
+  async _wrapWrite(entity, dest, options, renderingTemplate) {
+    await this.write(entity, dest, options, renderingTemplate);
   }
 }
 
