@@ -249,13 +249,11 @@ class ScaffoldGenerator extends BaseGenerator {
         //let user choice which schema we will scaffold
         let schema = await this.choice('schema to scaffold',schemas);
         await databaseService.buildSchema(schema);
+        databaseService.disconnect()
         object = await databaseService.buildModels();
-        //Convert to Yml object
-        //object = await databaseService.toYmlSchema(schema);
 
-        //console.log(JSON.stringify(object));
+        // console.log(JSON.stringify(object));
 
-        //databaseService.disconnect()
 
         //for each table founded generate the
         for (const id in object) {

@@ -93,9 +93,9 @@ class Base extends Command {
   async _writeContents (dest, contents) {
     return new Promise(()=>{
       fs.outputFile(dest, contents,(error)=>{});
-      console.log(`create: ${dest}`);
+      //console.log(`create: ${dest}`);
     },(error)=>{
-      
+
     });
   }
 
@@ -117,14 +117,12 @@ class Base extends Command {
           // if (hasFile) {
           //   throw new Error(`I am afraid ${this._incrementalPath(dest)} already exists`)
           // }
-      
+
           if (renderingTemplate === '.njk') {
             const temp = nunjucks.compile(contents, env)
-            //console.log(temp.render(options));
-           return await this._writeContents(dest, temp.render(options))
+            return await this._writeContents(dest, temp.render(options))
           } else {
             const temp = ejs.compile(contents)
-            //console.log(temp(options));
             return await this._writeContents(dest, temp(options))
           }
 

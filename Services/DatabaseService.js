@@ -7,6 +7,7 @@ class DatabaseService {
     this.connection = Database.connection(name)
     this.schema = {};
     this.models = {};
+    this.stack = [];
   }
 
   disconnect() {
@@ -58,10 +59,6 @@ class DatabaseService {
     return validation.join("|");
   }
 
-  async toYmlSchema(schema) {
-    return Promise.reject('Not implemented.');
-  }
-
   async buildModels() {
     console.log("Tryng build models. Await!");
     for (const name in this.models) {
@@ -70,19 +67,20 @@ class DatabaseService {
         this.models[name] = await this.buildModel(name);
       }
     }
-    return this.models;
+    return Promise.resolve(this.models);
   }
 
   async buildModel(name) {
     //Get table structure
     let table = this.schema[name];
     let model = this.models[name];
-    
-    if (model.builded === true) return model;
-    
-    console.log(`building model ${name}`);
 
-    let modelName = inflect.singularize(name);
+    if (model.builded === true) return model;
+
+    console.log(`building model ${name}`);
+    this.stack.push(name);
+
+    let modelName = inflect.singularize(name.toLowerCase());
     modelName = inflect.camelize(modelName);
     //build a field for each columns on table
     for (const column of table.columns) {
@@ -96,16 +94,18 @@ class DatabaseService {
     for (const i in table.constraints) {
       const constraint = table.constraints[i];
       switch (constraint.type) {
+        case 'P':
         case 'p': {
           model.primary = constraint.keys;
         } break;
         case 'c':
           break;
+        case 'R':
         case 'f': {
           let relation = {};
           relation.name = constraint.foreign_table;
           relation.relatedmodel = constraint.foreign_table;
-          let relatedModel = inflect.singularize(constraint.foreign_table);
+          let relatedModel = inflect.singularize(constraint.foreign_table.toLowerCase());
           relatedModel = inflect.camelize(relatedModel);
           for (const key of constraint.keys) {
             let field = model.fields[key];
@@ -122,7 +122,7 @@ class DatabaseService {
             foreignkeys: constraint.keys,
           });
 
-          if (name !== constraint.foreign_table) {
+          if (name !== constraint.foreign_table && !this.stack.includes(constraint.foreign_table)) {
             let foreignModel = await this.buildModel(constraint.foreign_table);
             foreignModel.relation.push(
             {
@@ -132,7 +132,7 @@ class DatabaseService {
               relatedcolumn: constraint.keys,
               foreignkeys: constraint.foreign_keys,
             });
-            
+
           }else{
             model.relation.push(
             {
@@ -143,14 +143,15 @@ class DatabaseService {
               foreignkeys: constraint.foreign_keys,
             });
           }
-          
-          
+
+
         } break;
       }
       //console.log(value);
     }
     model.builded = true;
-    return model;
+    this.stack.pop();
+    return Promise.resolve(model);
   }
 
 

@@ -11,8 +11,6 @@ class OracleService extends DatabaseService
     }
 
     async getTables(schema){
-        //save to use another time
-        this.schema = schema;
         return await this.connection.from('ALL_TABLES')
         .where('OWNER', '=',schema)
         .orderBy('TABLE_NAME', 'asc')
@@ -21,26 +19,47 @@ class OracleService extends DatabaseService
 
     async getColumns(table){
         return await this.connection.from('ALL_TAB_COLS')
-        .where('OWNER', '=',this.schema)
+      //  .where('OWNER', '=',this.schema)
         .where('TABLE_NAME',table)
         .orderBy('COLUMN_ID', 'asc')
         .select('COLUMN_NAME as name', 'DATA_TYPE as type',
          'DATA_LENGTH as length', 'NULLABLE as nullable', 'DATA_PRECISION as precision','DATA_SCALE as scale')
     }
 
+    async getColumnsConstraints(name){
+       return await this.connection.from('ALL_CONS_COLUMNS')
+       .where('CONSTRAINT_NAME', name)
+       .orderBy('POSITION','asc')
+       .select('COLUMN_NAME as name')
+       .map(function (value) {
+           return value.name;
+       });
+    }
     async getConstraints(table){
-      return await this.connection.from('ALL_CONSTRAINTS as ac')
-      .innerJoin('ALL_CONS_COLUMNS as acc','ac.CONSTRAINT_NAME','acc.CONSTRAINT_NAME')
-      .innerJoin('ALL_CONSTRAINTS as rc',' ac.R_CONSTRAINT_NAME','rc.CONSTRAINT_NAME')
-      .innerJoin('ALL_CONS_COLUMNS as rcc', function () {
-        this.on('rc.CONSTRAINT_NAME','rcc.CONSTRAINT_NAME')
-        .andOn('rcc.POSITION','acc.POSITION');
-      })
-      .where("ac.CONSTRAINT_TYPE","R")
+
+      let constraints = await this.connection.from('ALL_CONSTRAINTS as ac')
+      .leftJoin('ALL_CONSTRAINTS as rc',' ac.R_CONSTRAINT_NAME','rc.CONSTRAINT_NAME')
       .where("ac.TABLE_NAME", table)
-      //.orderBy([{ column: 'ac.CONSTRAINT_NAME' }, { column: 'rcc.COLUMN_NAME'},
-      //          { column:'acc.POSITION'},{ column: 'rcc.POSITION' }])
-      .select('ac.CONSTRAINT_NAME', 'acc.COLUMN_NAME','rc.TABLE_NAME AS R_TABLE_NAME' ,'rcc.COLUMN_NAME AS R_COLUMN_NAME');
+      .select('ac.CONSTRAINT_NAME as name', 'ac.CONSTRAINT_TYPE as type','ac.R_CONSTRAINT_NAME as related','rc.TABLE_NAME as foreign_table');
+
+
+      for (let constraint of constraints) {
+
+        constraint.keys = await this.getColumnsConstraints(constraint.name);
+
+        switch (constraint.type) {
+          case "C":
+
+            break;
+          case "P":{
+          }break;
+          case "R":{
+            constraint.foreign_keys = await this.getColumnsConstraints(constraint.related);
+          }break;
+        }
+
+      }
+      return Promise.resolve(constraints);
     }
 
     getType(dbtype){
@@ -48,11 +67,11 @@ class OracleService extends DatabaseService
         case 'VARCHAR2': return 'string';
         case 'CHAR': return 'string';
         case 'NCHAR': return 'string';
-        case 'NVARCHAR2 ': return 'string';
-        case 'CLOB ': return 'text';
-        case 'NLOB ': return 'text';
-        case 'LONG ': return 'text';
-        case 'NUMBER ': return 'decimal';
+        case 'NVARCHAR2': return 'string';
+        case 'CLOB': return 'text';
+        case 'NLOB': return 'text';
+        case 'LONG': return 'text';
+        case 'NUMBER': return 'decimal';
         case 'BINARY_FLOAT': return 'float';
         case 'BINARY_DOUBLE': return 'decimal';
         case 'DATE': return 'date';
@@ -62,43 +81,6 @@ class OracleService extends DatabaseService
         case 'BFILE': return 'binary';
         default:  return 'string';
       }
-    }
-
-    
-    async toYmlSchema(schema){
-        let schemas = [];
-        let tables = await this.getTables(schema)
-        //for each table query columns
-        for (const table of tables) {
-            let entity = {};
-            entity.name = table.name;
-            entity.fields = {};
-            entity.relation = {};
-            try {
-
-              table.columns = await this.getColumns(table.name);
-              //console.log(table.columns)
-              for (const index in table.columns) {
-                  let column = table.columns[index];
-                  let field = {};
-                  let nullable = column.nullable ==='N'? false: true;
-
-                  let type = this.getType(column.type);
-                  field.type = type;
-                  field.rules = this.getTypeValidation(type, nullable, column.length,column.precision, column.scale);
-                  entity.fields[column.name] = field;
-              }
-
-              table.constraints = await this.getConstraints(table.name);
-              console.log(table.constraints);
-              schemas.push(entity);
-            } catch (error) {
-              //this.error(error)
-              console.log(error);
-            }
-
-          }
-        return Promise.resolve(schemas);
     }
 }
 

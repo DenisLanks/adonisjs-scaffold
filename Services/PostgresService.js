@@ -7,9 +7,9 @@ class PostgresService extends DatabaseService {
     async getSchemas() {
         console.info('loading schemas from database...');
         let schemas = await this.connection.distinct('schemaname').from('pg_catalog.pg_tables')
-        return schemas.map(function (value, index) {
-            return value.schemaname
-        });
+        return Promise.resolve(schemas.map(function (value, index) {
+          return value.schemaname
+        })) ;
     }
 
     async getTables(schema) {
@@ -47,7 +47,7 @@ class PostgresService extends DatabaseService {
             });
 
             if (constraint.foreign_table) {
-                
+
                 constraint.foreign_keys = await this.connection.from('information_schema.columns')
                 .where('table_name', constraint.foreign_table)
                 .whereIn('ordinal_position', constraint.foreign_keys)
@@ -57,8 +57,8 @@ class PostgresService extends DatabaseService {
                     return value.name;
                 });
             }
-        }    
-        return constraints;
+        }
+        return Promise.resolve(constraints);
     }
 
     getType(dbtype) {
@@ -78,69 +78,7 @@ class PostgresService extends DatabaseService {
             }
         }
     }
-    
-    async toYmlSchema(schema) {
-        let schemas = [];
-        //for each table query columns
-        for (const table_name in this.schema) {
-            let table = this.schema[table_name]
-            let entity = {};
-            entity.name = table_name;
-            entity.fields = {};
-            entity.relation = {};
-            entity.primary = [];
 
-            for (const index in table.columns) {
-                let column = table.columns[index];
-                let nullable = !column.notnull;
-                let field = {};
-                let type = this.getType(column.type);
-                field.type = type;
-                field.rules = this.getTypeValidation(type, nullable, column.length, column.precision, column.scale);
-                entity.fields[column.name] = field;
-            }
-
-            for (const key in table.constraints) {
-                const value = table.constraints[key];
-                switch (value.type) {
-                    case 'p':{
-                        console.log(`${table_name} primary key:`);
-                        for (const i in value.keys) {
-                            const id = value.keys[i] -1;
-                            const column = table.columns[id];
-                            entity.primary.push(column.name);
-                        }
-                        
-                    }break;
-                    case 'c':                  
-                        break;
-                    case 'f':{
-                        let relation = {};
-                        relation.name = value.foreign_table;
-                        relation.relatedmodel = value.foreign_table;
-                        for (const i in value.keys) {
-                            const id = value.keys[i] -1;
-                            const column = table.columns[id];
-                            entity.primary.push(column.name);
-                            let field = entity.fields[column.name];
-                            if (field.type ==='biginteger' || field.type ==='integer') {
-                                field.unsigned = true;
-                            }
-                            //console.log(entity.fields[column.name])
-                        }
-
-                        let foreign_table = this.schema[value.foreign_table];
-                    }break;
-                }
-                //console.log(value);
-            }
-            //console.log(JSON.stringify(table.constraints));
-            console.log(entity);
-            schemas.push(entity);
-        }
-        //console.log(JSON.stringify(schemas));
-        return Promise.resolve(schemas);
-    }
 }
 
 module.exports = PostgresService
