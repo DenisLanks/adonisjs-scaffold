@@ -67,6 +67,7 @@ class DatabaseService {
         this.models[name] = await this.buildModel(name);
       }
     }
+    this.schema = null;
     return Promise.resolve(this.models);
   }
 

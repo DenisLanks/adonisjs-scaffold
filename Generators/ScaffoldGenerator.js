@@ -50,7 +50,7 @@ class ScaffoldGenerator extends BaseGenerator {
     }
     try {
       await this.write(template, toPath, templateOptions, '.njk')
-      //this._success(toPath)
+      this._success(toPath)
       await this.makeMigration(name, name/*table.entityName.toLowerCase()*/, fields)
     } catch (e) {
       this._error(e.message)
@@ -101,10 +101,10 @@ class ScaffoldGenerator extends BaseGenerator {
     }
   }
 
-  * makeService(name, fields) {
+  async makeService(name) {
     const entity = this._makeEntityName(name, 'model', false, 'singular')
     const table = this._makeEntityName(name, '', false, 'plural')
-    const toPath = path.join(this.helpers.appRoot(), 'Services', `${entity.entityPath}.js`)
+    const toPath = path.join(this.helpers.appRoot(), 'Services', `${entity.entityPath}Service.js`)
     const template = 'service'
     const templateOptions = {
       name: entity.entityName,
@@ -112,7 +112,7 @@ class ScaffoldGenerator extends BaseGenerator {
       table: table.entityName.toLowerCase()
     }
     try {
-      yield this.write(template, toPath, templateOptions, '.njk')
+        await this.write(template, toPath, templateOptions, '.njk')
       this._success(toPath)
     } catch (e) {
       this._error(e.message)
@@ -120,7 +120,7 @@ class ScaffoldGenerator extends BaseGenerator {
   }
 
 
-  * makeTest(name, fields) {
+  async makeTest(name, fields) {
     const entity = this._makeEntityName(name, 'model', false, 'singular')
     const table = this._makeEntityName(name, '', false, 'plural')
     const toPath = path.join(this.helpers.appRoot(), 'tests', 'unit', `${entity.entityPath}.spec.js`)
@@ -140,14 +140,14 @@ class ScaffoldGenerator extends BaseGenerator {
     }
 
     try {
-      yield this.write(template, toPath, templateOptions, '.njk')
+        await this.write(template, toPath, templateOptions, '.njk')
       this._success(toPath)
     } catch (e) {
       this._error(e.message)
     }
   }
 
-  * makeView(name, fields) {
+  async makeView(name, fields) {
     try {
       const entity = this._makeEntityName(name, 'view', false)
       const table = this._makeEntityName(name, '', false, 'plural')
@@ -164,7 +164,7 @@ class ScaffoldGenerator extends BaseGenerator {
           controllerName: controllerEntity.entityName,
           route: table.entityName.toLowerCase()
         }
-        yield this._wrapWrite(template, toPath, templateOptions, '.ejs')
+         await this._wrapWrite(template, toPath, templateOptions, '.ejs')
       }
     } catch (e) {
       this._error(e.message)
@@ -194,11 +194,12 @@ class ScaffoldGenerator extends BaseGenerator {
   async generate(schema) {
     const name = schema.name
     const fields = schema.fields
-    this.makeModel(name, fields, schema)
-    this.makeController(name, fields)
-    this.makeRepository(name)
-    // this.makeView(name, fields)
-    // this.makeTest(name, fields)
+    await this.makeModel(name, fields, schema)
+    await this.makeController(name, fields)
+    await this.makeRepository(name)
+    await this.makeService(name)
+    await this.makeView(name, fields)
+    await this.makeTest(name, fields)
   }
 
   async handle(args, options) {
