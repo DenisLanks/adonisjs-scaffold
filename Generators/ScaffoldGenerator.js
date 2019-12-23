@@ -51,7 +51,7 @@ class ScaffoldGenerator extends BaseGenerator {
     try {
       await this.write(template, toPath, templateOptions, '.njk')
       this._success(toPath)
-      await this.makeMigration(name, name/*table.entityName.toLowerCase()*/, fields)
+      //await this.makeMigration(name, name/*table.entityName.toLowerCase()*/, fields)
     } catch (e) {
       this._error(e.message)
     }
@@ -171,15 +171,53 @@ class ScaffoldGenerator extends BaseGenerator {
     }
   }
 
-  async makeMigration(name, tableName, fields) {
+  getTypeMigration(type, identity){
+      if (identity ===true) {
+        const tokens = type.split('|');
+
+        switch (tokens[0]) {
+          case 'integer':{
+            tokens[0] = 'increments';
+            return tokens.join("|");
+          }
+        
+          case 'biginteger':{
+            tokens[0] = 'bigincrements';
+            return tokens.join("|");
+          }
+        }
+      }
+
+      return type;
+  }
+
+  async makeMigration(name, tableName, schema) {
     const entity = this._makeEntityName(name, 'migration', false)
     const toPath = this.helpers.migrationsPath(`${new Date().getTime()}_${name}.js`)
     const template = 'migration'
+
+    let fields = {};
+
+    for (const key in schema.fields) {
+        const element = schema.fields[key];
+        let field = {};
+        field.type = this.getTypeMigration(element.type,element.identity);
+        field.unique = element.unique;
+        field.unsigned = element.unsigned;
+        fields[key] = field;
+    }
+
+    // for (const id in schema.relation) {
+    //     const element = schema.relation[id];
+    // }
+
     const templateOptions = {
       table: tableName,
       name: entity.entityName,
-      fields
+      fields: fields,
+      relations: schema.relation
     }
+
     await this._wrapWrite(template, toPath, templateOptions, '.njk')
   }
 
@@ -188,12 +226,13 @@ class ScaffoldGenerator extends BaseGenerator {
   }
 
   static get description() {
-    return 'Scaffold make easier generate with template'
+    return 'Scaffold make easier generate with template or from database'
   }
 
   async generate(schema) {
     const name = schema.name
     const fields = schema.fields
+    await this.makeMigration(name,name,schema)
     await this.makeModel(name, fields, schema)
     await this.makeController(name, fields)
     await this.makeRepository(name)
@@ -251,22 +290,19 @@ class ScaffoldGenerator extends BaseGenerator {
         await databaseService.buildSchema(schema);
         databaseService.disconnect()
         object = await databaseService.buildModels();
-
         // console.log(JSON.stringify(object));
-
-
         //for each table founded generate the
         for (const id in object) {
           await this.generate(object[id]);
         }
-
+        
       } break;
-
+      
       case 'Yml': {
         try {
           const name = await this
             .ask('Enter yml name');
-          object = yaml.load(path.join(this.helpers.appRoot(), name + '.yml'))
+            object = yaml.load(path.join(this.helpers.appRoot(), name + '.yml'))
           console.log(JSON.stringify(object));
           //this.generate(object);
         } catch (e) {
@@ -274,7 +310,8 @@ class ScaffoldGenerator extends BaseGenerator {
         }
       } break;
     }
-
+    
+    await this._writeContents("models.json",JSON.stringify(object));
 
     //this.success("Ayee finished build , let's code")
   }

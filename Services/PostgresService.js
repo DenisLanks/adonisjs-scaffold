@@ -22,7 +22,7 @@ class PostgresService extends DatabaseService {
         return await this.connection.from('information_schema.columns')
             .where('table_name', table)
             .orderBy('ordinal_position', 'asc')
-            .select('column_name as name','udt_name as type', 'is_nullable as nullable',
+            .select('column_name as name','udt_name as type', 'is_nullable as nullable','column_default as default',
                 'character_maximum_length as length', 'numeric_precision as precision', 'numeric_scale as scale')
     }
 
@@ -61,22 +61,36 @@ class PostgresService extends DatabaseService {
         return Promise.resolve(constraints);
     }
 
-    getType(dbtype) {
+    getType(dbtype, lenght, precision, scale) {
+        let type =[];
         switch (dbtype) {
+            case 'bool': return 'boolean';
             case 'timestamp': return dbtype;
             case 'text': return dbtype;
             case 'date': return dbtype;
             case 'datetime': return dbtype;
             case 'int8': return 'biginteger';
             case 'int4': return 'integer';
-            case 'float8': return 'double';
-            case 'float4': return 'float';
-            case 'numeric': return 'decimal';
+            case 'int2': return 'integer';
+            case 'float8':{
+                type.push("double");
+            }break;
+            case 'float4': {
+                type.push("float");
+            }break;
+            case 'numeric':{
+                type.push("decimal");
+                type.push(precision);
+                type.push(scale);
+            }break;
 
             default: {
-              return 'string';
-            }
+                type.push("string");
+                type.push(lenght);
+            }break;
         }
+
+        return type.join("|");
     }
 
 }

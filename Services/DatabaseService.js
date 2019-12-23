@@ -85,9 +85,20 @@ class DatabaseService {
     modelName = inflect.camelize(modelName);
     //build a field for each columns on table
     for (const column of table.columns) {
-      let field = {};
-      let type = this.getType(column.type);
+      let field = {
+        unsigned : false,
+        identity : false,
+        unique   : false
+      };
+      let type = this.getType(column.type,column.length,column.precision,column.scale);
       field.type = type;
+
+      //console.log(column.default.startWith);
+      if (column.default !== undefined && column.default!== null &&
+         (column.default.startsWith('nextval'))) {
+        field.identity = true;
+      }
+
       field.rules = this.getTypeValidation(type, column.nullable, column.length, column.precision, column.scale);
       model.fields[column.name] = field;
     }
@@ -119,6 +130,7 @@ class DatabaseService {
             name: inflect.singularize(constraint.foreign_table),
             relationtype: "belongsTo",
             relatedmodel: relatedModel,
+            relatedtable: constraint.foreign_table,
             relatedcolumn: constraint.foreign_keys,
             foreignkeys: constraint.keys,
           });
