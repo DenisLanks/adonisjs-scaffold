@@ -44,13 +44,24 @@ class DatabaseService {
       } break;
       case "float": {
         validation.push(type);
-        validation.push('' + precision);
-        validation.push('' + scale);
+        if (precision!==null) {
+          validation.push('' + precision);
+        }
+
+        if (scale!==null) {
+          validation.push('' + scale);
+        }
       } break;
       case "decimal": {
         validation.push(type);
-        validation.push('' + precision);
-        validation.push('' + scale);
+        if (precision!==null) {
+          validation.push('' + precision);
+        }
+
+        if (scale!==null) {
+          validation.push('' + scale);
+        }
+
       } break;
       default: {
         validation.push(type);
@@ -112,6 +123,12 @@ class DatabaseService {
         } break;
         case 'c':
           break;
+        case 'U':{
+          for (const key of constraint.keys) {
+            let field = model.fields[key];
+            field.unique = true;
+          }
+        }break;
         case 'R':
         case 'f': {
           let relation = {};

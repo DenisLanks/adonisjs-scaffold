@@ -53,6 +53,9 @@ class OracleService extends DatabaseService
             break;
           case "P":{
           }break;
+          case "U":{
+
+          }break;
           case "R":{
             constraint.foreign_keys = await this.getColumnsConstraints(constraint.related);
           }break;
@@ -81,8 +84,13 @@ class OracleService extends DatabaseService
             }
           }else{
             type.push('decimal');
-            type.push(precision);
-            type.push(scale);
+            if (precision!==null) {
+              type.push(precision);
+            }
+
+            if (scale!==null) {
+              type.push(scale);
+            }
           }
         }break;
         case 'BINARY_FLOAT': return 'float';
