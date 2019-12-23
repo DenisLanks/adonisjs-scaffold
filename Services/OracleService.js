@@ -1,6 +1,5 @@
 'use strict'
 const DatabaseService = require('./DatabaseService');
-const Database = use('Database')
 class OracleService extends DatabaseService
 {
 
