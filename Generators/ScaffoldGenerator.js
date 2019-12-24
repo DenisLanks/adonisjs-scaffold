@@ -180,7 +180,7 @@ class ScaffoldGenerator extends BaseGenerator {
             tokens[0] = 'increments';
             return tokens.join("|");
           }
-        
+
           case 'biginteger':{
             tokens[0] = 'bigincrements';
             return tokens.join("|");
@@ -222,13 +222,31 @@ class ScaffoldGenerator extends BaseGenerator {
   }
 
   static get signature() {
-    return 'scaffold'
+    return `scaffold
+            { --log : Print all steps }
+            { --export-models : export the models to disk. }
+    `
   }
 
   static get description() {
     return 'Scaffold make easier generate with template or from database'
   }
 
+  /**
+   * Export models to file
+   * @param {Object} models
+   */
+  async exportModels(models){
+    if (this.options.exportModels) {
+      return this._writeContents("models.json",JSON.stringify(models));
+    }
+    return Promise.resolve();
+  }
+
+  /**
+   * Generate files to CRUD
+   * @param {Object} schema
+   */
   async generate(schema) {
     const name = schema.name
     const fields = schema.fields
@@ -242,6 +260,14 @@ class ScaffoldGenerator extends BaseGenerator {
   }
 
   async handle(args, options) {
+
+    //apply options
+    for (const flag in options) {
+      if(options[flag]!==null)
+      this.options[flag] = options[flag];
+    }
+
+    this.options = options;
     // Chose the source of scaffold
     let source = await this.choice('Source of scaffold', ['Database', 'Yml']);
     let object = {};
@@ -290,30 +316,34 @@ class ScaffoldGenerator extends BaseGenerator {
         await databaseService.buildSchema(schema);
         databaseService.disconnect()
         object = await databaseService.buildModels();
+
+        await this.exportModels(object);
         // console.log(JSON.stringify(object));
         //for each table founded generate the
         for (const id in object) {
           await this.generate(object[id]);
         }
-        
+
       } break;
-      
+
       case 'Yml': {
         try {
           const name = await this
             .ask('Enter yml name');
             object = yaml.load(path.join(this.helpers.appRoot(), name + '.yml'))
-          console.log(JSON.stringify(object));
-          //this.generate(object);
+            await this.exportModels(object);
+
+          //console.log(JSON.stringify(object));
+          this.generate(object);
         } catch (e) {
           this._error(e.message)
         }
       } break;
     }
-    
+
     await this._writeContents("models.json",JSON.stringify(object));
 
-    //this.success("Ayee finished build , let's code")
+    this.success("Ready. Thank you for use adonisjs-scaffold")
   }
 }
 

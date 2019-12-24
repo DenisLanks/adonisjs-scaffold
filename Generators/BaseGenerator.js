@@ -25,6 +25,11 @@ class Base extends Command {
       stack:'fullstack', //fullstack, backend,
       mode:'interactive' //interactive, silent
     });
+
+    this.options = {
+      exportModels:false,
+      log:false,
+    };
   }
 
   /**
