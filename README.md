@@ -1,17 +1,17 @@
 # adonisjs-scaffold
-adonisjs-scaffold is a package to generate scaffold from *.yml, database and json(soon). This is a fork and rewrite from [adonis-generator](https://github.com/zainul/adonis-generator), with support to generate from database and json.
+adonisjs-scaffold is a package to generate scaffold from **.yml**, **database** and **json**(soon). This is a fork and rewrite from [adonis-generator](https://github.com/zainul/adonis-generator), with support to generate from database and json.
 
 #Support
 adonisjs-scaffold support Postgresql, Oracle, Mysql(soon), MSSQL(soon) and Sqlite(soon).
 
 #Installation
-***incomplete**
+###**incomplete**
 
 Install on your project typing 
 ``
 npm i /adonis-scaffold
 ``
-
+#Setup
 Add to **commands** in **start/app.js** 
 ``
 adonis-scaffold/Generators/ScaffoldGenerator
@@ -33,7 +33,7 @@ the message will be showed:
 select the option you want
 
 ##Yml
-If you choose Yml type the name of file without extension. The file must be on root directory
+If you choose Yml, type the name of file without extension. The file must be on root directory
 > Enter yml name
 
 > Enter yml name test
@@ -47,8 +47,8 @@ If you choose Database, the connection name is required.
 > Enter connection name 
 
 Type the connection name to list the schema:
-Database config founded! Client oracledb
-> schema to scaffold (Use arrow keys)
+>Database config founded! Client oracledb
+ schema to scaffold (Use arrow keys)
   XS$NULL
   ANONYMOUS
   APEX_PUBLIC_USER
@@ -70,3 +70,9 @@ Export the models to json, use this flag to export the model and edit some thing
 ``
 --log
 ``
+#Coming Soon
+  Support to MySql - **Pending**
+  Support to MSSql - **Pending**
+  Support to Sqlite - **Pending**
+  Generate code from custom templates. - **Started**
+  Scaffold some tables instead of all tables on schema - **Pending**
