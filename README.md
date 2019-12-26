@@ -5,11 +5,11 @@ adonisjs-scaffold is a package to generate scaffold from **.yml**, **database** 
 adonisjs-scaffold support Postgresql, Oracle, Mysql(soon), MSSQL(soon) and Sqlite(soon).
 
 #Installation
-###**incomplete**
+
 
 Install on your project typing 
 ``
-npm i /adonis-scaffold
+npm i @lanks/adonis-scaffold
 ``
 #Setup
 Add to **commands** in **start/app.js** 
