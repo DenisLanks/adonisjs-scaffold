@@ -1,0 +1,38 @@
+'use strict'
+
+const Exceptions = use('App/Exceptions');
+const {{ name }} = use('App/Models/{{name}}');
+const {{ name }}Repository = use('App/Repositories/{{name}}Repository');
+
+class {{ name }}Service {
+
+  static get fillable(){
+    return {{name}}.fillable;
+  }
+
+  static get rules(){
+    return {{name}}.rules;
+  }
+
+  static async find(id) {
+    return = await {{ name }}Repository.find(id);
+  }
+
+  static async all() {
+    return await {{ name }}Repository.all();
+  }
+
+  static async create(options) {
+    return await {{ name }}Repository(options);
+  }
+
+  static async update(id, options) {
+    return await {{ name }}Repository.update(id,options);
+  }
+
+  async delete (id) {
+    return await {{ name }}Repository.delete(id);
+  }
+}
+
+module.exports = {{ name }}Service

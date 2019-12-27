@@ -1,0 +1,62 @@
+'use strict'
+
+const Exceptions = use('App/Exceptions');
+const {{name}} = use('App/Model/{{name}}');
+
+class {{name}}Repository {
+
+  static async find (id) {
+    const {{lowerName}} = await {{name}}.find(id);
+
+    if (!{{lowerName}}) {
+      throw new Exceptions.ApplicationExceptions('Cannot find {{lowerName}} with given id', 404)
+    }
+
+    return Primise.resolve({{lowerName}});
+  }
+
+  static async all () {
+    const {{table}} = await {{name}}.all();
+
+    return Promise.resolve({{table}});
+  }
+
+  static async create (options) {
+    const {{lowerName}} = new {{name}}(options);
+
+    await {{lowerName}}.save();
+
+    if ({{lowerName}}.isNew()) {
+      throw new Exceptions.ApplicationException('Unable to save {{lowerName}}', 500)
+    }
+
+    return Promise.resolve({{lowerName}});
+  }
+
+  static async update (id, options) {
+    const {{lowerName}} =  await {{name}}.find(id);
+
+    for (var key in options) {
+      {{lowerName}}[key] = options[key];
+    }
+
+    await {{lowerName}}.save();
+
+    return Promise.resolve({{lowerName}});
+  }
+
+  static async delete (id) {
+
+    const {{lowerName}} = await {{name}}.find(id);
+
+    await {{lowerName}}.delete();
+
+    if (!{{lowerName}}.isDeleted()) {
+      throw new Exceptions.ApplicationException('Unable to delete {{lowerName}}', 500)
+    }
+
+    return Promise.resolve(true);
+  }
+}
+
+module.exports = {{name}}Repository
