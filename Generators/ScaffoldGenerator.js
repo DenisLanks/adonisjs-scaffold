@@ -215,7 +215,7 @@ class ScaffoldGenerator extends BaseGenerator {
       table: tableName,
       name: entity.entityName,
       fields: fields,
-      relations: schema.relation
+      relations: schema.relation.filter((item)=>{ return item.relationtype ==='belongsTo'})
     }
 
     await this._wrapWrite(template, toPath, templateOptions, '.njk')
