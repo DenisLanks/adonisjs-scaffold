@@ -1,0 +1,83 @@
+'use strict'
+const Validator = use('Validator');
+const {{shortName}} = use('App/Model/{{shortName}}');
+const {{shortName}}Service = make('App/Services/{{shortName}}Service');
+const BaseController = require('./BaseController');
+
+class {{name}}Controller extends BaseController {
+
+  constructor() {
+    super();
+  }
+
+  async index(request, response) {
+    const {{table}} = await {{shortName}}Service.all();
+    await response.sendView('{{table}}.index', { {{table}} : {{table}}.toJSON() })
+  }
+
+  async create(request, response) {
+    await response.sendView('{{table}}.create', {} )
+  }
+
+  async store(request, response) {
+    const postData = request.only({{ shortName }}Service.fillable);
+    const validation = await Validator.validate(postData, {{shortName}}Service.rules)
+
+    if (validation.fails()) {
+      await request
+       .withOnly({{ shortName }}Service.fillable)
+       .andWith({ errors: validation.messages() })
+       .flash();
+
+      response.redirect('back')
+      return
+    }
+
+    const created = await {{shortName}}Service.create(postData);
+
+    response.redirect('back');
+  }
+
+  async show(request, response) {
+    const {{shortNameLower}} = await {{shortName}}Service.find(request.param('id'))
+
+    await response.sendView('{{table}}.show',
+      {
+        {{shortNameLower}}: {{shortNameLower}}.toJSON()
+      });
+  }
+
+  async edit(request, response) {
+    const {{shortNameLower}} = await {{shortName}}Service.find(request.param('id'))
+
+    await response.sendView('{{table}}.edit', { {{shortNameLower}}: {{shortNameLower}}.toJSON() })
+  }
+
+  async update(request, response) {
+    const updatedData = request.only({{ shortName }}Service.fillable);
+
+    const validation = await Validator.validate(updatedData, {{shortName}}Service.rules)
+
+    if (validation.fails()) {
+      await request
+       .withOnly({{shortName}}Service.fillable)
+       .andWith({ errors: validation.messages() })
+       .flash();
+
+      response.redirect('back')
+      return
+    }
+
+    const {{shortNameLower}} = await {{shortName}}Service.update(request.param('id'), updatedData)
+
+    await response.redirect('/{{table}}')
+  }
+
+  async destroy(request, response) {
+    await {{shortName}}Service.delete(request.param('id'));
+
+    await response.redirect('/{{table}}');
+  }
+}
+
+module.exports = {{name}}Controller

@@ -35,13 +35,18 @@ class Base extends Command {
     super();
     this.helpers = Helpers;
     this.config = Config.get('scaffold',{
-      templates:'./../../../templates',
+      templates:'./../templates',
       services: true,
       repositories:true,
       migrations:true,
       stack:'fullstack', //fullstack, backend,
       mode:'interactive' //interactive, silent
     });
+
+    this.options = {
+      exportModels:false,
+      log:false,
+    };
   }
 
   /**
@@ -112,7 +117,7 @@ class Base extends Command {
       fs.outputFile(dest, contents,(error)=>{});
       //console.log(`create: ${dest}`);
     },(error)=>{
-
+      console.log(error);
     });
   }
 
@@ -128,7 +133,7 @@ class Base extends Command {
    */
 
   async write (template, dest, options, renderingTemplate) {
-    template = template.endsWith(renderingTemplate) ? template : this._makeTemplatePath(template, renderingTemplate);
+    template = template.endsWith(renderingTemplate) ? template : this._makeTemplatePath(template, renderingTemplate);console.log(template);
     await this._getContents(template,async (err,contents)=>{
           // const hasFile = await this._hasFile(dest)
           // if (hasFile) {

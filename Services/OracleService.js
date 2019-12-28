@@ -21,7 +21,7 @@ class OracleService extends DatabaseService
       //  .where('OWNER', '=',this.schema)
         .where('TABLE_NAME',table)
         .orderBy('COLUMN_ID', 'asc')
-        .select('COLUMN_NAME as name', 'DATA_TYPE as type',
+        .select('COLUMN_NAME as name', 'DATA_TYPE as type','DATA_DEFAULT as default',
          'DATA_LENGTH as length', 'NULLABLE as nullable', 'DATA_PRECISION as precision','DATA_SCALE as scale')
     }
 
@@ -34,6 +34,7 @@ class OracleService extends DatabaseService
            return value.name;
        });
     }
+
     async getConstraints(table){
 
       let constraints = await this.connection.from('ALL_CONSTRAINTS as ac')
@@ -52,6 +53,9 @@ class OracleService extends DatabaseService
             break;
           case "P":{
           }break;
+          case "U":{
+
+          }break;
           case "R":{
             constraint.foreign_keys = await this.getColumnsConstraints(constraint.related);
           }break;
@@ -61,7 +65,8 @@ class OracleService extends DatabaseService
       return Promise.resolve(constraints);
     }
 
-    getType(dbtype){
+    getType(dbtype, length, precision, scale){
+      let type =[];
       switch (dbtype) {
         case 'VARCHAR2': return 'string';
         case 'CHAR': return 'string';
@@ -70,7 +75,24 @@ class OracleService extends DatabaseService
         case 'CLOB': return 'text';
         case 'NLOB': return 'text';
         case 'LONG': return 'text';
-        case 'NUMBER': return 'decimal';
+        case 'NUMBER':{
+          if (scale ===0 ) {
+            if (precision >10) {
+              type.push('integer');
+            } else {
+              type.push('biginteger')
+            }
+          }else{
+            type.push('decimal');
+            if (precision!==null) {
+              type.push(precision);
+            }
+
+            if (scale!==null) {
+              type.push(scale);
+            }
+          }
+        }break;
         case 'BINARY_FLOAT': return 'float';
         case 'BINARY_DOUBLE': return 'decimal';
         case 'DATE': return 'date';
@@ -78,8 +100,13 @@ class OracleService extends DatabaseService
         case 'TIMESTAMP': return 'timestamp';
         case 'BLOB': return 'binary';
         case 'BFILE': return 'binary';
-        default:  return 'string';
+        default:{
+            type.push('string');
+            type.push(length);
+          }break;
       }
+
+      return type.join("|");
     }
 }
 

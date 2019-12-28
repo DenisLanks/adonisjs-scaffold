@@ -26,15 +26,16 @@ export default class MySqlService extends DatabaseService {
 
     async getConstraints(table) {
 
+        //Get constraint's names 
         let constraints = await this.connection.from('information_schema.TABLE_CONSTRAINTS as tc')
             .leftJoin('information_schema.KEY_COLUMN_USAGE as kcu', ' tc.TABLE_NAME', 'kcu.TABLE_NAME')
             .where("tc.TABLE_NAME", table)
             .distinct('tc.CONSTRAINT_NAME as name', 'tc.CONSTRAINT_TYPE as type', 'kcu.REFERENCED_TABLE_NAME as foreign_table');
 
-
+        //for each constraint get columns informations
         for (let constraint of constraints) {
 
-            constraint.keys = await this.getColumnsConstraints(constraint.name,table);
+            constraint.keys = await this.getColumnsConstraints(constraint.name, table);
 
             switch (constraint.type) {
                 case "CHECK": break;
@@ -50,21 +51,21 @@ export default class MySqlService extends DatabaseService {
         return Promise.resolve(constraints);
     }
 
-getType(dbtype) {
-    switch (dbtype) {
-        case 'timestamp': return dbtype;
-        case 'text': return dbtype;
-        case 'date': return dbtype;
-        case 'datetime': return dbtype;
-        case 'int8': return 'biginteger';
-        case 'int4': return 'integer';
-        case 'float8': return 'double';
-        case 'float4': return 'float';
-        case 'numeric': return 'decimal';
+    getType(dbtype) {
+        switch (dbtype) {
+            case 'timestamp': return dbtype;
+            case 'text': return dbtype;
+            case 'date': return dbtype;
+            case 'datetime': return dbtype;
+            case 'int8': return 'biginteger';
+            case 'int4': return 'integer';
+            case 'float8': return 'double';
+            case 'float4': return 'float';
+            case 'numeric': return 'decimal';
 
-        default: {
-            return 'string';
+            default: {
+                return 'string';
+            }
         }
     }
-}
 }
