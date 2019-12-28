@@ -9,9 +9,26 @@ const { Command } = require('@adonisjs/ace')
 const Config = Ioc.use('Config')
 const fs = require('co-fs-extra')
 const env = new nunjucks.Environment()
+
 env.addFilter('split', function (str, seperator) {
   return str.split(seperator)
-})
+});
+
+env.addFilter('fields', function (field) {
+  let path = ['table'];
+
+  let tokens = field.type.split('|');
+  if (tokens.lenght) {
+    path.push(`${tokens[0]}("${field.name}",${tokens[1]})`);
+  }
+  if (field.unsigned) {
+    path.push('unsigned()');
+  }
+  if (field.unique) {
+    path.push('unique()');
+  }
+  return path.join(".");
+});
 
 class Base extends Command {
   constructor (Helpers) {
