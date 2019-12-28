@@ -13,6 +13,11 @@ class ScaffoldGenerator extends BaseGenerator {
     super(Helpers)
   }
 
+  /**
+   * Generate the controller 
+   * @param {String} name 
+   * @param {Object} fields 
+   */
   async makeController(name, fields) {
     const entity = this._makeEntityName(name, 'controller', true)
     const shortName = entity.entityName.split('Controller')[0]
@@ -37,6 +42,12 @@ class ScaffoldGenerator extends BaseGenerator {
     await this._wrapWrite('controller', toPath, templateOptions, '.njk')
   }
 
+  /**
+   * Generate the model
+   * @param {String} name 
+   * @param {Object} fields 
+   * @param {Object} object 
+   */
   async makeModel(name, fields, object) {
     const entity = this._makeEntityName(name, 'model', false, 'singular');
     const table = this._makeEntityName(name, '', false, 'plural');
