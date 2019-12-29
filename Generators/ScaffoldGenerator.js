@@ -215,6 +215,7 @@ class ScaffoldGenerator extends BaseGenerator {
         field.type = this.getTypeMigration(element.type,element.identity);
         field.unique = element.unique;
         field.unsigned = element.unsigned;
+        field.nullable = element.nullable;
         fields[key] = field;
     }
 
@@ -226,6 +227,8 @@ class ScaffoldGenerator extends BaseGenerator {
       table: tableName,
       name: entity.entityName,
       fields: fields,
+      autoincrement: schema.autoincrement,
+      primary: schema.primary,
       relations: schema.relation.filter((item)=>{ return item.relationtype ==='belongsTo'})
     }
 
@@ -248,10 +251,16 @@ class ScaffoldGenerator extends BaseGenerator {
    * @param {Object} models
    */
   async exportModels(models){
-    if (this.options.exportModels) {
-      return this._writeContents("models.json",JSON.stringify(models));
-    }
-    return Promise.resolve();
+    return new Promise((resolve,reject)=>{
+        if (this.options.exportModels) {
+            this._writeContents("models.json",JSON.stringify(models))
+            .then(()=>{
+              console.log("models export successful");
+            },(error)=>{console.log(error);});
+        }
+        resolve();
+    });
+    
   }
 
   /**
@@ -311,6 +320,14 @@ class ScaffoldGenerator extends BaseGenerator {
             console.log('Database config founded! Client oracledb')
             const OracleService = require('../Services/OracleService');
             databaseService = new OracleService()
+            databaseService.connect(name)
+          } break;
+
+          case 'mysql': {
+            //generate scaffold from postgres database
+            console.log('Database config founded! Client mysql')
+            const MySqlService = require('../Services/MySqlService');
+            databaseService = new MySqlService()
             databaseService.connect(name)
           } break;
 

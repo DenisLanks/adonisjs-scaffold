@@ -32,9 +32,14 @@ class DatabaseService {
     return Promise.reject('Not implemented.');
   }
 
+  isNullable(nullable) {
+    if (nullable === false || nullable === 'NO' || nullable === 'N')
+      return false;
+    return true;
+  }
   getTypeValidation(type, nullable, length, precision, scale) {
     let validation = [];
-    if (nullable === false || nullable ==='NO' || nullable==='N' ) validation.push("required");
+    if (this.isNullable(nullable)) validation.push("required");
     switch (type) {
       case "string": {
         validation.push(type);
@@ -44,21 +49,21 @@ class DatabaseService {
       } break;
       case "float": {
         validation.push(type);
-        if (precision!==null) {
+        if (precision !== null) {
           validation.push('' + precision);
         }
 
-        if (scale!==null) {
+        if (scale !== null) {
           validation.push('' + scale);
         }
       } break;
       case "decimal": {
         validation.push(type);
-        if (precision!==null) {
+        if (precision !== null) {
           validation.push('' + precision);
         }
 
-        if (scale!==null) {
+        if (scale !== null) {
           validation.push('' + scale);
         }
 
@@ -74,7 +79,7 @@ class DatabaseService {
     console.log("Tryng build models. Await!");
     for (const name in this.models) {
       let model = this.models[name];
-      if (model.builded===false) {
+      if (model.builded === false) {
         this.models[name] = await this.buildModel(name);
       }
     }
@@ -97,17 +102,20 @@ class DatabaseService {
     //build a field for each columns on table
     for (const column of table.columns) {
       let field = {
-        unsigned : false,
-        identity : false,
-        unique   : false
+        unsigned: false,
+        identity: false,
+        unique: false,
+        nullable: true
       };
-      let type = this.getType(column.type,column.length,column.precision,column.scale);
-      field.type = type;
 
-      //console.log(column.default.startWith);
-      if (column.default !== undefined && column.default!== null &&
-         (column.default.startsWith('nextval'))) {
+      let type = this.getType(column.type, column.length, column.precision, column.scale);
+      field.type = type;
+      field.nullable = this.isNullable(column.nullable)
+
+      if (column.default !== undefined && column.default !== null &&
+        (column.default.startsWith('nextval'))) {
         field.identity = true;
+        model.autoincrement = true;
       }
 
       field.rules = this.getTypeValidation(type, column.nullable, column.length, column.precision, column.scale);
@@ -123,12 +131,12 @@ class DatabaseService {
         } break;
         case 'c':
           break;
-        case 'U':{
+        case 'U': {
           for (const key of constraint.keys) {
             let field = model.fields[key];
             field.unique = true;
           }
-        }break;
+        } break;
         case 'R':
         case 'f': {
           let relation = {};
@@ -143,35 +151,35 @@ class DatabaseService {
             }
           }
           model.relation.push(
-          {
-            name: inflect.singularize(constraint.foreign_table),
-            relationtype: "belongsTo",
-            relatedmodel: relatedModel,
-            relatedtable: constraint.foreign_table,
-            relatedcolumn: constraint.foreign_keys,
-            foreignkeys: constraint.keys,
-          });
+            {
+              name: inflect.singularize(constraint.foreign_table),
+              relationtype: "belongsTo",
+              relatedmodel: relatedModel,
+              relatedtable: constraint.foreign_table,
+              relatedcolumn: constraint.foreign_keys,
+              foreignkeys: constraint.keys,
+            });
 
           if (name !== constraint.foreign_table && !this.stack.includes(constraint.foreign_table)) {
             let foreignModel = await this.buildModel(constraint.foreign_table);
             foreignModel.relation.push(
-            {
-              name: name,
-              relationtype: "hasMany",
-              relatedmodel: modelName,
-              relatedcolumn: constraint.keys,
-              foreignkeys: constraint.foreign_keys,
-            });
+              {
+                name: name,
+                relationtype: "hasMany",
+                relatedmodel: modelName,
+                relatedcolumn: constraint.keys,
+                foreignkeys: constraint.foreign_keys,
+              });
 
-          }else{
+          } else {
             model.relation.push(
-            {
-              name: name,
-              relationtype: "hasMany",
-              relatedmodel: modelName,
-              relatedcolumn: constraint.keys,
-              foreignkeys: constraint.foreign_keys,
-            });
+              {
+                name: name,
+                relationtype: "hasMany",
+                relatedmodel: modelName,
+                relatedcolumn: constraint.keys,
+                foreignkeys: constraint.foreign_keys,
+              });
           }
 
 
@@ -186,6 +194,7 @@ class DatabaseService {
 
 
   async buildSchema(name) {
+    this.schemaName = name;
     console.log("Building schema from database. Await!");
     let tables = await this.getTables(name);
     for (const id in tables) {
@@ -196,6 +205,7 @@ class DatabaseService {
       this.schema[table.name] = table;
       this.models[table.name] = {
         name: table.name,
+        autoincrement: false,
         fields: {},
         relation: [],
         primary: [],

@@ -14,38 +14,64 @@ env.addFilter('split', function (str, seperator) {
   return str.split(seperator)
 });
 
-env.addFilter('fields', function (field) {
-  let path = ['table'];
+env.addFilter('primaryIndex', function (keys) {
+  return `table.primary(${keys.reduce(
+    function (total, value,index) {
+      if (index !== 0) {
+        return total + `,"${value}"`;
+      }
+      return total + `"${value}"`;
+    }
+    , '')});`;
+});
 
+env.addFilter('fields', function (name, field) {
+  let path = ['table'];
   let tokens = field.type.split('|');
-  if (tokens.lenght) {
-    path.push(`${tokens[0]}("${field.name}",${tokens[1]})`);
+  if (tokens.length > 1) {
+    let args = tokens.reduce(function (total, value, index, arr) {
+      if (index !== 0) {
+        return total + `,${value}`;
+      }
+      return total;
+    }, '');
+
+    path.push(`${tokens[0]}("${name}"${args})`);
+  } else {
+    path.push(`${field.type}("${name}")`);
   }
+
+  if (field.nullable ===true) {
+    path.push('nullable()');
+  }
+
   if (field.unsigned) {
     path.push('unsigned()');
   }
+
   if (field.unique) {
     path.push('unique()');
   }
+
   return path.join(".");
 });
 
 class Base extends Command {
-  constructor (Helpers) {
+  constructor(Helpers) {
     super();
     this.helpers = Helpers;
-    this.config = Config.get('scaffold',{
-      templates:'./../templates',
+    this.config = Config.get('scaffold', {
+      templates: './../templates',
       services: true,
-      repositories:true,
-      migrations:true,
-      stack:'fullstack', //fullstack, backend,
-      mode:'interactive' //interactive, silent
+      repositories: true,
+      migrations: true,
+      stack: 'fullstack', //fullstack, backend,
+      mode: 'interactive' //interactive, silent
     });
 
     this.options = {
-      exportModels:false,
-      log:false,
+      exportModels: false,
+      log: false,
     };
   }
 
@@ -56,7 +82,7 @@ class Base extends Command {
    *
    * @private
    */
-  _makeTemplatePath (template, ext) {
+  _makeTemplatePath(template, ext) {
     return path.join(__dirname, this.config.templates, `${template}${ext}`)
   }
 
@@ -70,7 +96,7 @@ class Base extends Command {
    *
    * @private
    */
-  _makeEntityName (name, entity, needPrefix, noun) {
+  _makeEntityName(name, entity, needPrefix, noun) {
     name = name.split(path.sep)
     let baseName = name.pop()
     const method = `${noun}ize`
@@ -79,7 +105,7 @@ class Base extends Command {
     baseName = i[method] ? i[method](baseName) : baseName
     const entityName = needPrefix ? i.camelize(`${baseName}_${entity}`) : i.camelize(baseName)
     name.push(entityName)
-    return {entityPath: name.join(path.sep), entityName}
+    return { entityPath: name.join(path.sep), entityName }
   }
 
   /**
@@ -89,8 +115,8 @@ class Base extends Command {
    *
    * @private
    */
-  async _getContents (template, callback) {
-    await fs.readFile(template, 'utf-8',callback);
+  async _getContents(template, callback) {
+    await fs.readFile(template, 'utf-8', callback);
   }
 
   /**
@@ -100,7 +126,7 @@ class Base extends Command {
    *
    * @private
    */
-  async _hasFile (dest) {
+  async _hasFile(dest) {
     return Promise.resolve(fs.exists(dest));
   }
 
@@ -112,11 +138,11 @@ class Base extends Command {
    *
    * @private
    */
-  async _writeContents (dest, contents) {
-    return new Promise(()=>{
-      fs.outputFile(dest, contents,(error)=>{});
+  async _writeContents(dest, contents) {
+    return new Promise(() => {
+      fs.outputFile(dest, contents, (error) => { });
       //console.log(`create: ${dest}`);
-    },(error)=>{
+    }, (error) => {
       console.log(error);
     });
   }
@@ -132,21 +158,21 @@ class Base extends Command {
    * @public
    */
 
-  async write (template, dest, options, renderingTemplate) {
-    template = template.endsWith(renderingTemplate) ? template : this._makeTemplatePath(template, renderingTemplate);console.log(template);
-    await this._getContents(template,async (err,contents)=>{
-          // const hasFile = await this._hasFile(dest)
-          // if (hasFile) {
-          //   throw new Error(`I am afraid ${this._incrementalPath(dest)} already exists`)
-          // }
+  async write(template, dest, options, renderingTemplate) {
+    template = template.endsWith(renderingTemplate) ? template : this._makeTemplatePath(template, renderingTemplate);
+    await this._getContents(template, async (err, contents) => {
+      // const hasFile = await this._hasFile(dest)
+      // if (hasFile) {
+      //   throw new Error(`I am afraid ${this._incrementalPath(dest)} already exists`)
+      // }
 
-          if (renderingTemplate === '.njk') {
-            const temp = nunjucks.compile(contents, env)
-            return await this._writeContents(dest, temp.render(options))
-          } else {
-            const temp = ejs.compile(contents)
-            return await this._writeContents(dest, temp(options))
-          }
+      if (renderingTemplate === '.njk') {
+        const temp = nunjucks.compile(contents, env)
+        return await this._writeContents(dest, temp.render(options))
+      } else {
+        const temp = ejs.compile(contents)
+        return await this._writeContents(dest, temp(options))
+      }
 
     });
   }
@@ -159,7 +185,7 @@ class Base extends Command {
    *
    * @private
    */
-  _incrementalPath (toPath) {
+  _incrementalPath(toPath) {
     const regeExp = new RegExp(`${this.helpers.appRoot()}${path.sep}?`)
     return toPath.replace(regeExp, '')
   }
@@ -172,7 +198,7 @@ class Base extends Command {
    *
    * @private
    */
-  _success (toPath) {
+  _success(toPath) {
     const incrementalPath = this._incrementalPath(toPath)
     this.completed('create', incrementalPath)
   }
@@ -184,7 +210,7 @@ class Base extends Command {
    *
    * @private
    */
-  _error (error) {
+  _error(error) {
     this.error(error)
   }
 

@@ -1,15 +1,18 @@
 'use strict'
-
+{% macro relation(rel) %}
+      table.foreign([{% for v in rel.foreignkeys %} "{{v|safe}}" {% if loop.last %} {% else %},{% endif %} {% endfor %}]).references([{% for v in rel.relatedcolumn %} "{{v|safe}}"  {% if loop.last %} {% else %},{% endif %}{% endfor %}]).inTable("{{rel.relatedtable}}")
+{% endmacro %}
 const Schema = use('Schema')
 
 class {{name}}Schema extends Schema {
 
   up () {
-    this.create('{{table}}', (table) => {
-      table.increments()
-      {% for key , value in fields %} {% if value.type.split("|")[1] %} table.{{ value.type.split("|")[0] }}('{{ key }}', {{value.type.split("|")}}) {% else %} table.{{ value.type }}('{{ key }}') {% endif %}
+    this.create('{{table}}', (table) => { 
+      {% for key , value in fields %}{{key|fields(value)|safe}};
       {% endfor %}
-      table.timestamps()
+      {% if autoincrement===false %}{{primary|primaryIndex|safe}}
+      {% endif %}
+      {% for rel in relations %}{{relation(rel)}}{% endfor %}
     })
   }
 
