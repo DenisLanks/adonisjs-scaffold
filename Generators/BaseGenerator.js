@@ -116,7 +116,10 @@ class Base extends Command {
    * @private
    */
   async _getContents(template, callback) {
-    await fs.readFile(template, 'utf-8', callback);
+    return new Promise(async (resolve,reject)=>{
+      await fs.readFile(template, 'utf-8', callback);
+      resolve();
+    });
   }
 
   /**

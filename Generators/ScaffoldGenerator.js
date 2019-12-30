@@ -289,7 +289,7 @@ class ScaffoldGenerator extends BaseGenerator {
 
     this.options = options;
     // Chose the source of scaffold
-    let source = await this.choice('Source of scaffold', ['Database', 'Yml']);
+    let source = await this.choice('Source of scaffold', ['Database', 'Json', 'Yml']);
     let object = {};
     switch (source) {
       case 'Database': {
@@ -354,6 +354,29 @@ class ScaffoldGenerator extends BaseGenerator {
 
       } break;
 
+      case 'Json':{
+        try {
+          const name = await this
+            .ask('Enter json name');
+          let filename = path.join(this.helpers.appRoot(), name + '.json');
+
+          await this._getContents(filename, async (error, contents) => {
+            if (error) {
+              console.log(error);
+              return;
+            }
+            object = JSON.parse(contents);
+            // await this.exportModels(object);
+            for (const id in object) {
+              await this.generate(object[id]);
+            }
+          });
+
+        } catch (e) {
+          this._error(e.message)
+        }
+      }break;
+
       case 'Yml': {
         try {
           const name = await this
@@ -368,8 +391,6 @@ class ScaffoldGenerator extends BaseGenerator {
         }
       } break;
     }
-
-    await this._writeContents("models.json",JSON.stringify(object));
 
     this.success("Ready. Thank you for use adonisjs-scaffold")
   }
