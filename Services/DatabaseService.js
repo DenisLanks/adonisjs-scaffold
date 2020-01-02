@@ -32,6 +32,11 @@ class DatabaseService {
     return Promise.reject('Not implemented.');
   }
 
+  async getIndexes(table) {
+    return Promise.resolve([]);
+
+  }
+
   isNullable(nullable) {
     if (nullable === false || nullable === 'NO' || nullable === 'N')
       return false;
@@ -39,7 +44,7 @@ class DatabaseService {
   }
   getTypeValidation(type, nullable, length, precision, scale) {
     let validation = [];
-    if (this.isNullable(nullable)) validation.push("required");
+    if (this.isNullable(nullable) === false) validation.push("required");
     switch (type) {
       case "string": {
         validation.push(type);
@@ -91,7 +96,8 @@ class DatabaseService {
     //Get table structure
     let table = this.schema[name];
     let model = this.models[name];
-
+	if(table.indexes !==null)
+		model.index = table.indexes;
     if (model.builded === true) return model;
 
     console.log(`building model ${name}`);
@@ -202,6 +208,7 @@ class DatabaseService {
       console.log(`Loading table ${table.name}`);
       table.columns = await this.getColumns(table.name);
       table.constraints = await this.getConstraints(table.name);
+      table.indexes = await this.getIndexes(table.name);
       this.schema[table.name] = table;
       this.models[table.name] = {
         name: table.name,
@@ -209,6 +216,7 @@ class DatabaseService {
         fields: {},
         relation: [],
         primary: [],
+        index: [],
         builded: false
       }
     }

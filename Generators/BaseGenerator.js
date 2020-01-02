@@ -25,6 +25,21 @@ env.addFilter('primaryIndex', function (keys) {
     , '')});`;
 });
 
+env.addFilter('index', function (keys){ 
+if(keys ===undefined)
+	return '';
+
+	console.log(`indices: ${keys}`);
+  return `table.index([${keys.reduce(
+    function (total, value,index) {
+      if (index !== 0) {
+        return total + `,"${value}"`;
+      }
+      return total + `"${value}"`;
+    }
+    , '')}]);`;
+});
+
 env.addFilter('fields', function (name, field) {
   let path = ['table'];
   let tokens = field.type.split('|');

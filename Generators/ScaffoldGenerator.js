@@ -229,9 +229,10 @@ class ScaffoldGenerator extends BaseGenerator {
       fields: fields,
       autoincrement: schema.autoincrement,
       primary: schema.primary,
+      indices: schema.index,
       relations: schema.relation.filter((item)=>{ return item.relationtype ==='belongsTo'})
     }
-
+    //console.log(templateOptions);
     await this._wrapWrite(template, toPath, templateOptions, '.njk')
   }
 
@@ -342,7 +343,7 @@ class ScaffoldGenerator extends BaseGenerator {
         //let user choice which schema we will scaffold
         let schema = await this.choice('schema to scaffold', schemas);
         await databaseService.buildSchema(schema);
-        databaseService.disconnect()
+        databaseService.disconnect();
         object = await databaseService.buildModels();
 
         await this.exportModels(object);

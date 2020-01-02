@@ -37,30 +37,52 @@ class PostgresService extends DatabaseService {
             'foreign.relname as foreign_table');
 
         for (const constraint of constraints) {
-            constraint.keys = await this.connection.from('information_schema.columns')
-            .where('table_name', table)
-            .whereIn('ordinal_position', constraint.keys)
-            .orderBy('ordinal_position', 'asc')
-            .select('column_name as name' )
-            .map(function (value) {
-                return value.name;
-            });
+            constraint.keys = await this.getColumnsNameByPosition(table,constraint.keys);
 
             if (constraint.foreign_table) {
-
-                constraint.foreign_keys = await this.connection.from('information_schema.columns')
-                .where('table_name', constraint.foreign_table)
-                .whereIn('ordinal_position', constraint.foreign_keys)
-                .orderBy('ordinal_position', 'asc')
-                .select('column_name as name' )
-                .map(function (value) {
-                    return value.name;
-                });
+                constraint.foreign_keys = await this.getColumnsNameByPosition(constraint.foreign_table, constraint.foreign_keys)
             }
         }
         return Promise.resolve(constraints);
     }
 
+    async getIndexes(table){
+        return new Promise(async (resolve, reject)=>{
+            try {
+				let indices = [];
+                let indexes = await this.connection.from('pg_index as pi')
+                .innerJoin('pg_class as pc', 'pi.indrelid', 'pc.oid')
+                .innerJoin('pg_class as pci', 'pi.indexrelid', 'pci.oid')
+                .where('pc.relname', table)
+                .where('pi.indisunique', false)
+                .where('pi.indisprimary', false)
+                .select('pci.relname as name','pi.indkey as columns');
+    
+                for (let index of indexes) {
+					let columns = index.columns.split(' ');
+					if(columns.length > 0)
+						indices = await this.getColumnsNameByPosition(table, columns);
+                }
+				
+                indexes = null;
+                resolve(indices);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    async getColumnsNameByPosition(table, positions){
+        return await this.connection.from('information_schema.columns')
+        .where('table_name', table)
+        .whereIn('ordinal_position', positions)
+        .orderBy('ordinal_position', 'asc')
+        .select('column_name as name' )
+        .map(function (value) {
+            return value.name;
+        });
+    }
+	
     getType(dbtype, lenght, precision, scale) {
         let type =[];
         switch (dbtype) {

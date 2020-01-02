@@ -10,6 +10,8 @@ class {{name}}Schema extends Schema {
     this.create('{{table}}', (table) => { 
       {% for key , value in fields %}{{key|fields(value)|safe}};
       {% endfor %}
+      {% for key , value in index %}{{value.columns|index(key)|safe}};
+      {% endfor %}
       {% if autoincrement===false %}{{primary|primaryIndex|safe}}
       {% endif %}
       {% for rel in relations %}{{relation(rel)}}{% endfor %}
