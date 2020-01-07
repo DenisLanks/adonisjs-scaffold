@@ -7,10 +7,10 @@ const Schema = use('Schema')
 class {{name}}Schema extends Schema {
 
   up () {
-    this.create('{{table}}', (table) => { 
+    this.create('{{table}}', (table) => {
       {% for key , value in fields %}{{key|fields(value)|safe}};
       {% endfor %}
-      {% for key , value in index %}{{value.columns|index(key)|safe}};
+      {% for ind in indices %}{{ind|index|safe}}
       {% endfor %}
       {% if autoincrement===false %}{{primary|primaryIndex|safe}}
       {% endif %}
