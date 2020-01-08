@@ -77,6 +77,7 @@ class Base extends Command {
     this.helpers = Helpers;
     this.config = Config.get('scaffold', {
       templates: './../templates',
+      customTemplates: null,
       services: true,
       repositories: true,
       migrations: true,
