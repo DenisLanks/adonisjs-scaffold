@@ -29,7 +29,7 @@ env.addFilter('index', function (index){
 if(index ===undefined)
 	return '';
 
-	//console.log(`indices: ${JSON.stringify(index)}`);
+//	console.log(`indices: ${JSON.stringify(index)}`);
   return `table.index([${index.columns.reduce(
     function (total, value,i) {
       if (i !== 0) {
@@ -180,6 +180,10 @@ class Base extends Command {
   async write(template, dest, options, renderingTemplate) {
     template = template.endsWith(renderingTemplate) ? template : this._makeTemplatePath(template, renderingTemplate);
     await this._getContents(template, async (err, contents) => {
+      if (err) {
+        console.error(err);
+        return Promise.resolve();
+      }
       // const hasFile = await this._hasFile(dest)
       // if (hasFile) {
       //   throw new Error(`I am afraid ${this._incrementalPath(dest)} already exists`)

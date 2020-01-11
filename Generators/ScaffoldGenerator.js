@@ -12,6 +12,7 @@ const fs = require('co-fs-extra')
 class ScaffoldGenerator extends BaseGenerator {
   constructor() {
     super(Helpers);
+    this.stack = [];
   }
 
   /**
@@ -317,16 +318,119 @@ class ScaffoldGenerator extends BaseGenerator {
     });
   }
 
+  async buildCustom(root, list, schema) {
+    return new Promise(async (resolve, reject) => {
+      if (!fs.exists(root)) {
+        reject(`Path ${root} not found!`);
+        return;
+      }
+
+      for (const filename of list) {
+        let subdir = path.resolve(root, filename);
+        await fs.lstat(subdir, async (err, stats) => {
+          if (err) {
+            console.error(err);
+            return;
+          }
+
+          if (stats.isDirectory()) {
+            await fs.readdir(subdir, async (err, list) => {
+              if (err) {
+                console.error(err);
+                return;
+              }
+              await this.buildCustom(subdir, list, schema);
+            });
+          } else if (stats.isFile()) {
+            let tokens = filename.split('.');
+            switch (tokens.pop()) {
+              case 'njk':
+                await this._wrapWrite(subdir, path.resolve(root, `${schema.name}.js`), schema, ".njk");
+                break;
+              case 'ejs':
+                console.log("EJS");
+                break;
+            }
+          }
+        });
+
+      }
+
+      resolve();
+    });
+  }
   async makeCustom(schema) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       //Read custom templates path
-      if (this.config.customTemplate === null || this.config.customTemplate === undefined)
+      if (this.config.customTemplate === null || this.config.customTemplate === undefined) {
         resolve();
+        return;
+      }
 
       //foreach template file on path
-      if(!fs.exists(this.config.customTemplate))
+      if (!fs.exists(this.config.customTemplate)) {
         reject(`Path ${this.config.customTemplate} not found!`);
+        return;
+      }
 
+      let exec = async (err, list) => {
+        let root = path.resolve(this.config.customTemplate);
+        if (err)
+          console.log(err);
+        await this.buildCustom(root, list, schema);
+      }
+
+      await fs.readdir(this.config.customTemplate, exec);
+
+      resolve();
+    });
+  }
+  generateMigration(key, models) {
+    try {
+      let model = models[key];
+
+      if (model.generated === true) {
+        return;
+      }else{
+        console.log(`model ${key} not generated.`);
+        model.generated = true
+        this.stack.push(key);
+        console.log(`checking dependencies.`);
+        let dependencies = model.relation.filter((value) => { return value.relationtype === "belongsTo"; });
+        console.log(`${dependencies.length} found.`);
+        if (dependencies.length > 0){
+          for (const rel of dependencies) {
+            console.log(`trying to generate ${rel.relatedtable}.`);
+            if (key !== rel.relatedtable && !this.stack.includes(rel.relatedtable)) {
+              this.generateMigration(rel.relatedtable, models);
+            }
+          }
+
+          this.makeMigration(key, key, model)
+          .then(()=>{
+            console.log(`model ${model.name} made.`);
+            this.stack.pop();
+          });
+          
+                    
+        }else{
+          this.makeMigration(key, key, model)
+            .then(()=>{
+              console.log(`model ${model.name} made.`);
+              this.stack.pop();
+            });
+        }
+       
+      }
+    } catch (error) {
+      return console.error(error);
+    }
+  }
+  async generateMigrations(models) {
+    return new Promise((resolve, reject) => {
+      for (const key in models) {
+        this.generateMigration(key, models)
+      }
       resolve();
     });
   }
@@ -337,14 +441,14 @@ class ScaffoldGenerator extends BaseGenerator {
   async generate(schema) {
     const name = schema.name;
     const fields = schema.fields;
-    await this.makeMigration(name, name, schema);
+    //await this.makeMigration(name, name, schema);
     await this.makeModel(name, fields, schema);
     await this.makeController(name, fields);
     await this.makeRepository(name);
     await this.makeService(name);
     await this.makeView(name, fields);
     await this.makeTest(name, fields);
-    await this.makeCustom(schema);
+    //await this.makeCustom(schema);
   }
 
   async handle(args, options) {
@@ -421,6 +525,8 @@ class ScaffoldGenerator extends BaseGenerator {
           object = await databaseService.buildModels();
 
           await this.exportModels(object);
+          console.log("generating");
+          await this.generateMigrations(object);
           // console.log(JSON.stringify(object));
           //for each table founded generate the
           for (const id in object) {
@@ -441,10 +547,10 @@ class ScaffoldGenerator extends BaseGenerator {
                 return;
               }
               object = JSON.parse(contents);
-              // await this.exportModels(object);
-              for (const id in object) {
-                await this.generate(object[id]);
-              }
+              await this.generateMigrations(object);
+              // for (const id in object) {
+              //   await this.generate(object[id]);
+              // }
             });
           } catch (e) {
             this._error(e.message);
@@ -469,7 +575,7 @@ class ScaffoldGenerator extends BaseGenerator {
         }
         break;
     }
-
+    this.stack = [];
     this.success("Ready. Thank you for use adonisjs-scaffold");
   }
 }
