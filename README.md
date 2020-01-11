@@ -2,7 +2,7 @@
 adonisjs-scaffold is a package to generate scaffold from **yml**, **database** and **json**. This is a fork and rewrite from [adonis-generator](https://github.com/zainul/adonis-generator), with support to generate from database and json.
 
 #Support
-adonisjs-scaffold support Postgresql, Oracle(partial), Mysql(soon), MSSQL(soon) and Sqlite(soon).
+adonisjs-scaffold support Postgresql, Oracle(partial), Mysql(partial), MSSQL(soon) and Sqlite(soon).
 
 #Installation
 
@@ -82,7 +82,7 @@ Export the models to json, use this flag to export the model and edit some thing
 --log
 ``
 #Coming Soon
-  Support to MySql - **Started**
+  Support to MySql - **Beta**
   Support to MSSql - **Pending**
   Support to Sqlite - **Pending**
   Generate code from custom templates. - **Started**
