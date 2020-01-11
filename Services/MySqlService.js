@@ -11,6 +11,7 @@ class MySqlService extends DatabaseService {
     }
 
     async getTables(schema) {
+        this.schemaName = schema;
         return await this.connection.select('TABLE_NAME as name', 'TABLE_TYPE as type', 'TABLE_COMMENT as comment')
             .from('information_schema.TABLES')
             .where('TABLE_SCHEMA', schema);
@@ -30,39 +31,38 @@ class MySqlService extends DatabaseService {
             .where("kcu.TABLE_NAME", table)
             .where("kcu.CONSTRAINT_NAME", name)
             .where("kcu.TABLE_SCHEMA", this.schemaName)
-            .orderBy('POSITION','asc')
-            .select('kcu.COLUMN_NAME as name')
-            .map(function (value) {
-                return value.name;
-            });
+            .orderBy('ORDINAL_POSITION','asc')
+            .select('kcu.COLUMN_NAME as name','kcu.REFERENCED_COLUMN_NAME as reference');
     }
 
     async getConstraints(table) {
 
         //Get constraint's names 
         let constraints = await this.connection.from('information_schema.TABLE_CONSTRAINTS as tc')
-            .leftJoin('KEY_COLUMN_USAGE as kcu', function() {
-                this.on('tc.TABLE_NAME', '=', 'kcu.TABLE_NAME')
-                .on('tc.CONSTRAINT_NAME', '=', 'kcu.CONSTRAINT_NAME')
+            .leftJoin('information_schema.REFERENTIAL_CONSTRAINTS as rc', function() {
+                this.on('tc.TABLE_NAME', '=', 'rc.TABLE_NAME')
+                .on('tc.CONSTRAINT_NAME', '=', 'rc.CONSTRAINT_NAME')
               })
-            .where("kcu.TABLE_SCHEMA", this.schemaName)
+            .where("tc.TABLE_SCHEMA", this.schemaName)
             .where("tc.TABLE_NAME", table)
-            .distinct('tc.CONSTRAINT_NAME as name', 'tc.CONSTRAINT_TYPE as type','kcu.REFERENCED_TABLE_NAME as foreign_table');
+            .distinct('tc.CONSTRAINT_NAME as name', 'tc.CONSTRAINT_TYPE as type','rc.REFERENCED_TABLE_NAME as foreign_table');
 
         //for each constraint get columns informations
         for (let constraint of constraints) {
-
-            constraint.keys = await this.getColumnsConstraints(constraint.name, table);
-
-            switch (constraint.type) {
-                case "CHECK": break;
-                case "UNIQUE": break;
-                case "PRIMARY KEY": {
-                } break;
-                case "FOREIGN KEY": {
-                    constraint.foreign_keys = await this.getColumnsConstraints(constraint.related);
-                } break;
+            
+            let columns = await this.getColumnsConstraints(constraint.name,table);
+            constraint.foreign_keys =[]; 
+            constraint.keys =[]; 
+            
+            for (const column of columns) {
+                constraint.keys.push(column.name);
+                
+                if (constraint.type === "FOREIGN KEY") {
+                    constraint.keys.push(column.reference);
+                }
+                
             }
+            
 
         }
         return Promise.resolve(constraints);
