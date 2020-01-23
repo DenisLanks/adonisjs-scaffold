@@ -199,10 +199,10 @@ class DatabaseService {
   }
 
 
-  async buildSchema(name) {
+  async buildSchema(name, tables) {
     this.schemaName = name;
     console.log("Building schema from database. Await!");
-    let tables = await this.getTables(name);
+
     for (const id in tables) {
       let table = tables[id];
       console.log(`Loading table ${table.name}`);

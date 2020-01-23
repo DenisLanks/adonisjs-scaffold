@@ -359,6 +359,7 @@ class ScaffoldGenerator extends BaseGenerator {
       resolve();
     });
   }
+  
   async makeCustom(schema) {
     return new Promise(async (resolve, reject) => {
       //Read custom templates path
@@ -385,6 +386,7 @@ class ScaffoldGenerator extends BaseGenerator {
       resolve();
     });
   }
+
   generateMigration(key, models) {
     try {
       let model = models[key];
@@ -441,7 +443,6 @@ class ScaffoldGenerator extends BaseGenerator {
   async generate(schema) {
     const name = schema.name;
     const fields = schema.fields;
-    //await this.makeMigration(name, name, schema);
     await this.makeModel(name, fields, schema);
     await this.makeController(name, fields);
     await this.makeRepository(name);
@@ -464,7 +465,8 @@ class ScaffoldGenerator extends BaseGenerator {
       "Json",
       "Yml"
     ]);
-    let object = {};
+
+    let models = {};
     switch (source) {
       case "Database":
         {
@@ -520,17 +522,26 @@ class ScaffoldGenerator extends BaseGenerator {
 
           //let user choice which schema we will scaffold
           let schema = await this.choice("schema to scaffold", schemas);
-          await databaseService.buildSchema(schema);
-          databaseService.disconnect();
-          object = await databaseService.buildModels();
+          let tables = await databaseService.getTables(schema);
+          let multiples = tables.map(function(value, index) {
+            return value.name;
+          });
 
-          await this.exportModels(object);
+          let selected = await this.multiple('Tables to scaffold', multiples, multiples);
+
+          await databaseService.buildSchema(schema,tables.filter((value,index)=>{
+            return selected.includes(value.name)
+          }));
+          databaseService.disconnect();
+
+          models = await databaseService.buildModels();
+          await this.exportModels(models);
           console.log("generating");
-          await this.generateMigrations(object);
-          // console.log(JSON.stringify(object));
+          await this.generateMigrations(models);
+          // console.log(JSON.stringify(models));
           //for each table founded generate the
-          for (const id in object) {
-            await this.generate(object[id]);
+           for (const id in models) {
+             await this.generate(models[id]);
           }
         }
         break;
@@ -546,11 +557,23 @@ class ScaffoldGenerator extends BaseGenerator {
                 console.log(error);
                 return;
               }
-              object = JSON.parse(contents);
-              await this.generateMigrations(object);
-              // for (const id in object) {
-              //   await this.generate(object[id]);
-              // }
+              models = JSON.parse(contents);
+
+              let multiples = [];
+              for (const name in models) {
+                multiples.push(name);
+              }
+
+              let selected = await this.multiple('Tables to scaffold',multiples,multiples);
+
+              for (const id in models) {
+                if(selected.includes(id)){
+                  await this.generate(models[id]);
+                }
+                else delete models[id];
+              }
+              //console.log(JSON.stringify(models))
+              await this.generateMigrations(models);
             });
           } catch (e) {
             this._error(e.message);
@@ -562,13 +585,13 @@ class ScaffoldGenerator extends BaseGenerator {
         {
           try {
             const name = await this.ask("Enter yml name");
-            object = yaml.load(
+            models = yaml.load(
               path.join(this.helpers.appRoot(), name + ".yml")
             );
-            await this.exportModels(object);
+            await this.exportModels(models);
 
-            //console.log(JSON.stringify(object));
-            this.generate(object);
+            //console.log(JSON.stringify(models));
+            this.generate(models);
           } catch (e) {
             this._error(e.message);
           }
