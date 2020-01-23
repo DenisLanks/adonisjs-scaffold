@@ -1,6 +1,6 @@
 {
   "name": "@lanks/adonis-scaffold",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Adonis package to scaffold database and generate migrations, cruds , validators etc.",
   "main": "index.js",
   "scripts": {
@@ -32,7 +32,6 @@
     "hogan.js": "^3.0.2",
     "inflect": "^0.4.0",
     "nunjucks": "^3.2.0",
-    "oracledb": "^4.1.0",
     "randomstring": "^1.1.5",
     "yamljs": "^0.3.0"
   }
