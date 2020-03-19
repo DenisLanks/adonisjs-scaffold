@@ -202,30 +202,34 @@ class ScaffoldGenerator extends BaseGenerator {
   }
 
   async makeView(name, fields) {
-    try {
-      const entity = this._makeEntityName(name, "view", false);
-      const table = this._makeEntityName(name, "", false, "plural");
-      const controllerEntity = this._makeEntityName(name, "controller", true);
-      const files = ["index", "show", "create", "edit", "field"];
-
-      for (var i = 0; i < files.length; i++) {
-        const toPath = path.join(
-          this.helpers.viewsPath(),
-          `${table.entityName.toLowerCase()}`,
-          `${files[i]}.njk`
-        );
-        const template = `view_${files[i]}`;
-        const templateOptions = {
-          objectDb: entity.entityName.toLowerCase(),
-          fields,
-          name: entity.entityName,
-          controllerName: controllerEntity.entityName,
-          route: table.entityName.toLowerCase()
-        };
-        await this._wrapWrite(template, toPath, templateOptions, ".ejs");
+    if (this.options.views===false) {
+      return Promise.resolve();
+    } else {
+      try {
+        const entity = this._makeEntityName(name, "view", false);
+        const table = this._makeEntityName(name, "", false, "plural");
+        const controllerEntity = this._makeEntityName(name, "controller", true);
+        const files = ["index", "show", "create", "edit", "field"];
+  
+        for (var i = 0; i < files.length; i++) {
+          const toPath = path.join(
+            this.helpers.viewsPath(),
+            `${table.entityName.toLowerCase()}`,
+            `${files[i]}.njk`
+          );
+          const template = `view_${files[i]}`;
+          const templateOptions = {
+            objectDb: entity.entityName.toLowerCase(),
+            fields,
+            name: entity.entityName,
+            controllerName: controllerEntity.entityName,
+            route: table.entityName.toLowerCase()
+          };
+          await this._wrapWrite(template, toPath, templateOptions, ".ejs");
+        }
+      } catch (e) {
+        this._error(e.message);
       }
-    } catch (e) {
-      this._error(e.message);
     }
   }
 
@@ -291,6 +295,8 @@ class ScaffoldGenerator extends BaseGenerator {
     return `scaffold
             { --log : Print all steps }
             { --export-models : export the models to disk. }
+            { --no-migrations : prevent generate migrations from database. }
+            { --no-views : prevent generate views from database. }
     `;
   }
 
@@ -428,13 +434,18 @@ class ScaffoldGenerator extends BaseGenerator {
       return console.error(error);
     }
   }
-  async generateMigrations(models) {
-    return new Promise((resolve, reject) => {
-      for (const key in models) {
-        this.generateMigration(key, models)
-      }
-      resolve();
-    });
+
+  async generateMigrations(models) {console.log(this.options);
+    if (this.options.migrations===false) {
+      return Promise.resolve();      
+    } else {
+      return new Promise((resolve, reject) => {
+        for (const key in models) {
+          this.generateMigration(key, models)
+        }
+        resolve();
+      });
+    }
   }
   /**
    * Generate files to CRUD

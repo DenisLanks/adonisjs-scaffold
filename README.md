@@ -96,6 +96,16 @@ look to output
 # Args and Options
 
 ``
+--no-migrations
+``  
+Prevent the scaffold generate migrations files.
+
+``
+--no-views
+``  
+Prevent the scaffold generate views files.
+
+``
 --export-Models
 ``  
 Export the models to json, use this flag to export the model and edit some things. The models will be exported to "models.json". The file will be overwrited if exists.
@@ -103,9 +113,7 @@ Export the models to json, use this flag to export the model and edit some thing
 ``
 --log
 ``  
-# Coming Soon  
-  Support to MySql - **Beta**  
+# Coming Soon    
   Support to MSSql - **Pending**  
   Support to Sqlite - **Pending**  
   Generate code from custom templates. - **Started**  
-  Scaffold some tables instead of all tables on schema - **Done**
